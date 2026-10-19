@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { db } from "@/api/db";
 import EmpleadoForm from "@/components/EmpleadoForm";
 import { Button } from "@/components/ui/button";
@@ -29,8 +29,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Plus, Search, Pencil, Trash2, Users } from "lucide-react";
+import { DEPARTAMENTOS } from "@/lib/constants";
+import { notifyError } from "@/lib/notify";
 
-const departamentos = ["Todos", "Ventas", "Tecnología", "Recursos Humanos", "Finanzas", "Operaciones", "Marketing"];
+const departamentos = ["Todos", ...DEPARTAMENTOS];
 
 export default function Empleados() {
   const [empleados, setEmpleados] = useState([]);
@@ -53,8 +55,10 @@ export default function Empleados() {
           { email: { $regex: search, $options: "i" } },
         ];
       }
-      const res = await db.entities.Empleado.filter(query, { sort: "apellidos", limit: 200 });
+      const res = await db.entities.Empleado.filterAll(query, { sort: "apellidos" });
       setEmpleados(res.items || []);
+    } catch (err) {
+      notifyError(err, "No se pudieron cargar los empleados");
     } finally {
       setLoading(false);
     }
@@ -67,9 +71,14 @@ export default function Empleados() {
   }, [search, depto]);
 
   const confirmDelete = async () => {
-    await db.entities.Empleado.delete(toDelete.id);
-    setToDelete(null);
-    load();
+    try {
+      await db.entities.Empleado.delete(toDelete.id);
+      load();
+    } catch (err) {
+      notifyError(err, "No se pudo eliminar el empleado");
+    } finally {
+      setToDelete(null);
+    }
   };
 
   const fullName = (e) => `${e.nombre} ${e.apellidos}`;

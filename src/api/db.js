@@ -2,6 +2,7 @@
 //
 // Interfaz sencilla por entidad:
 //   db.entities.Empleado.filter(query, { sort, limit })  -> { items }
+//   db.entities.Empleado.filterAll(query, { sort })      -> { items } (todas las páginas)
 //   db.entities.Empleado.count(query)                    -> number
 //   db.entities.Empleado.create(data) / update(id, data) / delete(id)
 //   db.entities.Turno.bulkCreate([...])
@@ -139,9 +140,20 @@ function clean(schema, data) {
   return out;
 }
 
+// Mensajes legibles para los errores de Postgres más habituales.
+const FRIENDLY_ERRORS = {
+  '23505': 'Ya existe un registro con esos datos (por ejemplo, el mismo empleado en la misma fecha).',
+  '23502': 'Falta un dato obligatorio.',
+  '23514': 'Algún valor no es válido.',
+  '42501': 'No tienes permisos para esta acción.',
+};
+
+// PostgREST devuelve como máximo 1000 filas por petición.
+const PAGE_SIZE = 1000;
+
 function raise(error) {
   if (error) {
-    const err = new Error(error.message || 'Error en la base de datos');
+    const err = new Error(FRIENDLY_ERRORS[error.code] || error.message || 'Error en la base de datos');
     err.status = error.code === 'PGRST301' || error.code === '42501' ? 403 : undefined;
     err.details = error;
     throw err;
@@ -162,6 +174,20 @@ function makeEntity(schema) {
       const { data, error } = await b;
       raise(error);
       return { items: data || [] };
+    },
+
+    // Como filter(), pero recorre todas las páginas: no corta en 1000 filas.
+    async filterAll(query = {}, { sort } = {}) {
+      const items = [];
+      for (let from = 0; ; from += PAGE_SIZE) {
+        // Se ordena también por id para que la paginación sea estable.
+        const b = applySort(applyQuery(table().select('*'), query), sort).order('id');
+        const { data, error } = await b.range(from, from + PAGE_SIZE - 1);
+        raise(error);
+        items.push(...(data || []));
+        if (!data || data.length < PAGE_SIZE) break;
+      }
+      return { items };
     },
 
     async list(options = {}) {

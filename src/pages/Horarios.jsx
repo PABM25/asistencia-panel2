@@ -13,8 +13,10 @@ import {
 import { CalendarClock, Search, Save } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { DEPARTAMENTOS, parseDateStr } from "@/lib/constants";
+import { notifyError, notifySuccess } from "@/lib/notify";
 
-const departamentos = ["Todos", "Ventas", "Tecnología", "Recursos Humanos", "Finanzas", "Operaciones", "Marketing"];
+const departamentos = ["Todos", ...DEPARTAMENTOS];
 
 export default function Horarios() {
   const [empleados, setEmpleados] = useState([]);
@@ -35,9 +37,11 @@ export default function Horarios() {
           { apellidos: { $regex: search, $options: "i" } },
         ];
       }
-      const res = await db.entities.Empleado.filter(query, { sort: "apellidos", limit: 200 });
+      const res = await db.entities.Empleado.filterAll(query, { sort: "apellidos" });
       setEmpleados(res.items || []);
       setEdits({});
+    } catch (err) {
+      notifyError(err, "No se pudieron cargar los empleados");
     } finally {
       setLoading(false);
     }
@@ -59,9 +63,16 @@ export default function Horarios() {
   const save = async (emp) => {
     const patch = edits[emp.id];
     if (!patch) return;
+    const entrada = patch.horario_entrada ?? emp.horario_entrada;
+    const salida = patch.horario_salida ?? emp.horario_salida;
+    if (!entrada || !salida) {
+      notifyError(new Error("Indica la hora de entrada y la de salida."), "Faltan datos");
+      return;
+    }
     setSavingId(emp.id);
     try {
       await db.entities.Empleado.update(emp.id, patch);
+      notifySuccess("Horario guardado", `${emp.nombre} ${emp.apellidos}: ${entrada} - ${salida}`);
       const newEmp = { ...emp, ...patch };
       setEmpleados((list) => list.map((x) => (x.id === emp.id ? newEmp : x)));
       setEdits((e) => {
@@ -69,6 +80,8 @@ export default function Horarios() {
         delete c[emp.id];
         return c;
       });
+    } catch (err) {
+      notifyError(err, "No se pudo guardar el horario");
     } finally {
       setSavingId(null);
     }
@@ -140,7 +153,7 @@ export default function Horarios() {
               </div>
               <div className="mt-4 flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">
-                  Alta: {emp.fecha_alta ? format(new Date(emp.fecha_alta + "T00:00"), "dd MMM yyyy", { locale: es }) : "—"}
+                  Alta: {emp.fecha_alta ? format(parseDateStr(emp.fecha_alta), "dd MMM yyyy", { locale: es }) : "—"}
                 </span>
                 <Button
                   size="sm"

@@ -33,6 +33,8 @@ import { es } from "date-fns/locale";
 import TurnoForm from "@/components/turnos/TurnoForm";
 import BulkTurnosDialog from "@/components/turnos/BulkTurnosDialog";
 import WeeklyCalendar from "@/components/turnos/WeeklyCalendar";
+import { DEPARTAMENTOS, todayStr, toDateStr, parseDateStr } from "@/lib/constants";
+import { notifyError } from "@/lib/notify";
 
 const tipos = ["mañana", "tarde", "noche", "partido", "personalizado"];
 
@@ -44,8 +46,7 @@ const tipoMeta = {
   personalizado: { color: "text-muted-foreground bg-muted" },
 };
 
-const todayStr = () => new Date().toISOString().split("T")[0];
-const deptos = ["Administración", "Ventas", "Marketing", "Tecnología", "Recursos Humanos", "Operaciones", "Finanzas", "Logística"];
+const deptos = DEPARTAMENTOS;
 
 export default function Turnos() {
   const [empleados, setEmpleados] = useState([]);
@@ -62,8 +63,12 @@ export default function Turnos() {
   const [toDelete, setToDelete] = useState(null);
 
   const loadEmpleados = async () => {
-    const res = await db.entities.Empleado.filter({ estado: "activo" }, { sort: "apellidos", limit: 500 });
-    setEmpleados(res.items || []);
+    try {
+      const res = await db.entities.Empleado.filterAll({ estado: "activo" }, { sort: "apellidos" });
+      setEmpleados(res.items || []);
+    } catch (err) {
+      notifyError(err, "No se pudieron cargar los empleados");
+    }
   };
 
   const loadTurnos = async () => {
@@ -74,13 +79,13 @@ export default function Turnos() {
         if (filterFecha) query.fecha = filterFecha;
         if (filterEmp !== "Todos") query.empleado_id = filterEmp;
       } else {
-        const weekEnd = format(addDays(weekStart, 6), "yyyy-MM-dd");
-        const weekStartStr = format(weekStart, "yyyy-MM-dd");
-        query.fecha = { $gte: weekStartStr, $lte: weekEnd };
+        query.fecha = { $gte: toDateStr(weekStart), $lte: toDateStr(addDays(weekStart, 6)) };
       }
       if (filterDepto !== "Todos") query.departamento = filterDepto;
-      const res = await db.entities.Turno.filter(query, { sort: "hora_inicio", limit: 500 });
+      const res = await db.entities.Turno.filterAll(query, { sort: "hora_inicio" });
       setTurnos(res.items || []);
+    } catch (err) {
+      notifyError(err, "No se pudieron cargar los turnos");
     } finally {
       setLoading(false);
     }
@@ -96,9 +101,14 @@ export default function Turnos() {
   }, [filterFecha, filterDepto, filterEmp, view, weekStart]);
 
   const onDelete = async () => {
-    await db.entities.Turno.delete(toDelete.id);
-    setToDelete(null);
-    loadTurnos();
+    try {
+      await db.entities.Turno.delete(toDelete.id);
+      loadTurnos();
+    } catch (err) {
+      notifyError(err, "No se pudo eliminar el turno");
+    } finally {
+      setToDelete(null);
+    }
   };
 
   const empleadosFiltrados = filterDepto === "Todos"
@@ -208,7 +218,7 @@ export default function Turnos() {
                         <TableCell className="font-medium">{t.empleado_nombre}</TableCell>
                         <TableCell className="hidden md:table-cell text-muted-foreground">{t.cargo || "—"}</TableCell>
                         <TableCell className="hidden lg:table-cell text-muted-foreground">{t.departamento || "—"}</TableCell>
-                        <TableCell>{format(new Date(t.fecha + "T00:00"), "dd MMM yyyy", { locale: es })}</TableCell>
+                        <TableCell>{format(parseDateStr(t.fecha), "dd MMM yyyy", { locale: es })}</TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${meta.color}`}>
                             {Icon && <Icon className="h-3 w-3" />}
@@ -279,7 +289,7 @@ export default function Turnos() {
             <AlertDialogTitle>¿Eliminar turno?</AlertDialogTitle>
             <AlertDialogDescription>
               Se eliminará el turno de {toDelete?.empleado_nombre} del{" "}
-              {toDelete && format(new Date(toDelete.fecha + "T00:00"), "dd 'de' MMMM", { locale: es })}.
+              {toDelete && format(parseDateStr(toDelete.fecha), "dd 'de' MMMM", { locale: es })}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

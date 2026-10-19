@@ -17,9 +17,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { todayStr } from "@/lib/constants";
+import { notifyError } from "@/lib/notify";
 
 const tipos = ["mañana", "tarde", "noche", "partido", "personalizado"];
-const todayStr = () => new Date().toISOString().split("T")[0];
 
 export default function TurnoForm({ open, onClose, onSaved, turno, empleados, defaultDepto }) {
   const [form, setForm] = useState({
@@ -87,7 +88,10 @@ export default function TurnoForm({ open, onClose, onSaved, turno, empleados, de
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!form.empleado_id || !form.fecha || !form.hora_inicio || !form.hora_fin) return;
+    if (!form.empleado_id || !form.fecha || !form.hora_inicio || !form.hora_fin) {
+      notifyError(new Error("Empleado, fecha, inicio y fin son obligatorios."), "Faltan datos");
+      return;
+    }
     setSaving(true);
     try {
       if (turno) {
@@ -97,6 +101,8 @@ export default function TurnoForm({ open, onClose, onSaved, turno, empleados, de
       }
       onSaved();
       onClose();
+    } catch (err) {
+      notifyError(err, "No se pudo guardar el turno");
     } finally {
       setSaving(false);
     }

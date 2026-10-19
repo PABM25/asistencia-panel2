@@ -8,8 +8,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Sun, Moon, Sunset } from "lucide-react";
-import { addDays, format, startOfWeek, isSameDay, parseISO } from "date-fns";
+import { addDays, format, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
+import { DEPARTAMENTOS } from "@/lib/constants";
 
 const tipoMeta = {
   mañana: { icon: Sun, color: "bg-amber-500/15 text-amber-700 border-amber-500/30" },
@@ -19,7 +20,7 @@ const tipoMeta = {
   personalizado: { color: "bg-muted text-muted-foreground border-border" },
 };
 
-const deptos = ["Administración", "Ventas", "Marketing", "Tecnología", "Recursos Humanos", "Operaciones", "Finanzas", "Logística"];
+const deptos = DEPARTAMENTOS;
 
 export default function WeeklyCalendar({ turnos, empleados, weekStart, onWeekChange, deptoFilter, onDeptoChange }) {
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);

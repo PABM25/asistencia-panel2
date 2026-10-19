@@ -17,8 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const departamentos = ["Ventas", "Tecnología", "Recursos Humanos", "Finanzas", "Operaciones", "Marketing"];
+import { DEPARTAMENTOS as departamentos, todayStr } from "@/lib/constants";
+import { notifyError } from "@/lib/notify";
 
 export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
   const [form, setForm] = useState({
@@ -28,7 +28,7 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
     telefono: "",
     departamento: "Ventas",
     cargo: "",
-    fecha_alta: new Date().toISOString().split("T")[0],
+    fecha_alta: todayStr(),
     estado: "activo",
     horario_entrada: "09:00",
     horario_salida: "17:00",
@@ -44,7 +44,7 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
         telefono: empleado.telefono || "",
         departamento: empleado.departamento || "Ventas",
         cargo: empleado.cargo || "",
-        fecha_alta: empleado.fecha_alta || new Date().toISOString().split("T")[0],
+        fecha_alta: empleado.fecha_alta || todayStr(),
         estado: empleado.estado || "activo",
         horario_entrada: empleado.horario_entrada || "09:00",
         horario_salida: empleado.horario_salida || "17:00",
@@ -57,7 +57,7 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
         telefono: "",
         departamento: "Ventas",
         cargo: "",
-        fecha_alta: new Date().toISOString().split("T")[0],
+        fecha_alta: todayStr(),
         estado: "activo",
         horario_entrada: "09:00",
         horario_salida: "17:00",
@@ -69,7 +69,10 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!form.nombre || !form.apellidos) return;
+    if (!form.nombre.trim() || !form.apellidos.trim()) {
+      notifyError(new Error("El nombre y los apellidos son obligatorios."), "Faltan datos");
+      return;
+    }
     setSaving(true);
     try {
       if (empleado) {
@@ -79,6 +82,8 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
       }
       onSaved();
       onClose();
+    } catch (err) {
+      notifyError(err, "No se pudo guardar el empleado");
     } finally {
       setSaving(false);
     }
@@ -117,7 +122,11 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
               <Select value={form.departamento} onValueChange={(v) => set("departamento", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {departamentos.map((d) => (
+                  {/* Conserva un departamento antiguo que ya no esté en la lista. */}
+                  {(departamentos.includes(form.departamento) || !form.departamento
+                    ? departamentos
+                    : [...departamentos, form.departamento]
+                  ).map((d) => (
                     <SelectItem key={d} value={d}>{d}</SelectItem>
                   ))}
                 </SelectContent>

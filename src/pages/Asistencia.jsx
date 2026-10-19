@@ -28,18 +28,10 @@ import {
 import { Clock, LogIn, LogOut, Pencil, Search } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-
-const estados = ["presente", "retraso", "ausente", "vacaciones", "permiso"];
-const estadoBadge = {
-  presente: "bg-emerald-500/10 text-emerald-600",
-  retraso: "bg-amber-500/10 text-amber-600",
-  ausente: "bg-rose-500/10 text-rose-600",
-  vacaciones: "bg-sky-500/10 text-sky-600",
-  permiso: "bg-violet-500/10 text-violet-600",
-};
+import { ESTADOS_ASISTENCIA as estados, estadoBadge, todayStr, parseDateStr } from "@/lib/constants";
+import { notifyError, notifySuccess } from "@/lib/notify";
 
 const nowTime = () => format(new Date(), "HH:mm");
-const todayStr = () => new Date().toISOString().split("T")[0];
 
 export default function Asistencia() {
   const [empleados, setEmpleados] = useState([]);
@@ -57,8 +49,12 @@ export default function Asistencia() {
   const [editReg, setEditReg] = useState(null);
 
   const loadEmpleados = async () => {
-    const res = await db.entities.Empleado.filter({ estado: "activo" }, { sort: "apellidos", limit: 500 });
-    setEmpleados(res.items || []);
+    try {
+      const res = await db.entities.Empleado.filterAll({ estado: "activo" }, { sort: "apellidos" });
+      setEmpleados(res.items || []);
+    } catch (err) {
+      notifyError(err, "No se pudieron cargar los empleados");
+    }
   };
 
   const loadRegistros = async () => {
@@ -73,6 +69,8 @@ export default function Asistencia() {
         limit: 100,
       });
       setRegistros(res.items || []);
+    } catch (err) {
+      notifyError(err, "No se pudieron cargar los registros");
     } finally {
       setLoading(false);
     }
@@ -98,56 +96,73 @@ export default function Asistencia() {
     setFichando(true);
     try {
       const nombre = empName(ficharEmp);
+      const fecha = todayStr();
+      const hora = nowTime();
+      // Hay como máximo un registro por empleado y día (restricción única en la base de datos).
       const existing = await db.entities.RegistroAsistencia.filter(
-        { empleado_id: ficharEmp, fecha: todayStr() },
+        { empleado_id: ficharEmp, fecha },
         { limit: 1 }
       );
       const rec = (existing.items || [])[0];
       if (tipo === "entrada") {
+        if (rec?.hora_entrada) {
+          notifyError(
+            new Error(`${nombre} ya tiene la entrada marcada a las ${rec.hora_entrada}. Para cambiarla, edita el registro.`),
+            "Entrada ya registrada"
+          );
+          return;
+        }
         const horario = empleados.find((x) => x.id === ficharEmp);
         let estado = "presente";
-        if (horario && horario.horario_entrada && nowTime() > horario.horario_entrada) {
+        if (horario && horario.horario_entrada && hora > horario.horario_entrada) {
           estado = "retraso";
         }
         if (rec) {
+          // Vacaciones, permiso o un retraso ya anotado se respetan; el resto se recalcula.
+          const recalcular = rec.estado === "ausente" || rec.estado === "presente";
           await db.entities.RegistroAsistencia.update(rec.id, {
-            hora_entrada: nowTime(),
-            estado: rec.estado === "ausente" ? estado : rec.estado,
+            hora_entrada: hora,
+            estado: recalcular ? estado : rec.estado,
             registrado_por: "empleado",
           });
         } else {
           await db.entities.RegistroAsistencia.create({
             empleado_id: ficharEmp,
             empleado_nombre: nombre,
-            fecha: todayStr(),
-            hora_entrada: nowTime(),
+            fecha,
+            hora_entrada: hora,
             estado,
             registrado_por: "empleado",
           });
         }
+        notifySuccess("Entrada registrada", `${nombre} · ${hora}${estado === "retraso" ? " (retraso)" : ""}`);
       } else {
         if (rec) {
           await db.entities.RegistroAsistencia.update(rec.id, {
-            hora_salida: nowTime(),
+            hora_salida: hora,
           });
         } else {
           await db.entities.RegistroAsistencia.create({
             empleado_id: ficharEmp,
             empleado_nombre: nombre,
-            fecha: todayStr(),
-            hora_salida: nowTime(),
+            fecha,
+            hora_salida: hora,
             estado: "presente",
             registrado_por: "empleado",
           });
         }
+        notifySuccess("Salida registrada", `${nombre} · ${hora}`);
       }
       setFicharEmp("");
       loadRegistros();
+    } catch (err) {
+      notifyError(err, "No se pudo registrar el fichaje");
     } finally {
       setFichando(false);
     }
   };
 
+  // Los errores se propagan al diálogo, que los muestra y se mantiene abierto.
   const saveEdit = async (data) => {
     if (editReg.id) {
       await db.entities.RegistroAsistencia.update(editReg.id, data);
@@ -257,7 +272,7 @@ export default function Asistencia() {
                 {registros.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.empleado_nombre}</TableCell>
-                    <TableCell>{format(new Date(r.fecha + "T00:00"), "dd MMM yyyy", { locale: es })}</TableCell>
+                    <TableCell>{format(parseDateStr(r.fecha), "dd MMM yyyy", { locale: es })}</TableCell>
                     <TableCell>{r.hora_entrada || "—"}</TableCell>
                     <TableCell>{r.hora_salida || "—"}</TableCell>
                     <TableCell>
@@ -315,9 +330,23 @@ function RegistroDialog({ registro, empleados, onClose, onSave }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (!form.empleado_id) {
+      notifyError(new Error("Selecciona un empleado."), "Faltan datos");
+      return;
+    }
+    if (!form.fecha) {
+      notifyError(new Error("Indica la fecha del registro."), "Faltan datos");
+      return;
+    }
+    if (form.hora_entrada && form.hora_salida && form.hora_salida < form.hora_entrada) {
+      notifyError(new Error("La hora de salida es anterior a la de entrada."), "Datos no válidos");
+      return;
+    }
     setSaving(true);
     try {
       await onSave(form);
+    } catch (err) {
+      notifyError(err, "No se pudo guardar el registro");
     } finally {
       setSaving(false);
     }

@@ -18,9 +18,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { DEPARTAMENTOS, todayStr } from "@/lib/constants";
+import { notifyError } from "@/lib/notify";
 
 const tipos = ["mañana", "tarde", "noche", "partido", "personalizado"];
-const todayStr = () => new Date().toISOString().split("T")[0];
 
 export default function BulkTurnosDialog({ open, onClose, onSaved, empleados, defaultDepto }) {
   const [depto, setDepto] = useState(defaultDepto || "");
@@ -49,6 +50,10 @@ export default function BulkTurnosDialog({ open, onClose, onSaved, empleados, de
   const submit = async (e) => {
     e.preventDefault();
     if (!depto || seleccionados.length === 0) return;
+    if (!fecha || !horaInicio || !horaFin) {
+      notifyError(new Error("Fecha, inicio y fin son obligatorios."), "Faltan datos");
+      return;
+    }
     setSaving(true);
     try {
       const records = seleccionados.map((emp) => ({
@@ -65,6 +70,8 @@ export default function BulkTurnosDialog({ open, onClose, onSaved, empleados, de
       await db.entities.Turno.bulkCreate(records);
       setResult({ count: records.length });
       onSaved();
+    } catch (err) {
+      notifyError(err, "No se pudieron asignar los turnos");
     } finally {
       setSaving(false);
     }
@@ -85,7 +92,7 @@ export default function BulkTurnosDialog({ open, onClose, onSaved, empleados, de
             <Select value={depto} onValueChange={setDepto}>
               <SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger>
               <SelectContent>
-                {["Administración", "Ventas", "Marketing", "Tecnología", "Recursos Humanos", "Operaciones", "Finanzas", "Logística"].map((d) => (
+                {DEPARTAMENTOS.map((d) => (
                   <SelectItem key={d} value={d}>{d}</SelectItem>
                 ))}
               </SelectContent>

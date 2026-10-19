@@ -80,21 +80,14 @@ export const AuthProvider = ({ children }) => {
     if (shouldRedirect) window.location.href = '/login';
   };
 
-  const navigateToLogin = () => {
-    const returnTo = window.location.pathname + window.location.search;
-    window.location.href = '/login' + (returnTo !== '/' ? '?returnTo=' + encodeURIComponent(returnTo) : '');
-  };
-
   return (
     <AuthContext.Provider value={{
       user,
       isAuthenticated,
       isLoadingAuth,
-      isLoadingPublicSettings: false,
       authError,
       authChecked,
       logout,
-      navigateToLogin,
       checkUserAuth,
     }}>
       {children}

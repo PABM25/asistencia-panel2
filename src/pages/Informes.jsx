@@ -18,44 +18,45 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Download, FileBarChart } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { subDays } from "date-fns";
+import { DEPARTAMENTOS, todayStr, toDateStr } from "@/lib/constants";
+import { notifyError } from "@/lib/notify";
 
-const departamentos = ["Todos", "Ventas", "Tecnología", "Recursos Humanos", "Finanzas", "Operaciones", "Marketing"];
+const departamentos = ["Todos", ...DEPARTAMENTOS];
 
 export default function Informes() {
-  const [empleados, setEmpleados] = useState([]);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [desde, setDesde] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 30);
-    return d.toISOString().split("T")[0];
-  });
-  const [hasta, setHasta] = useState(() => new Date().toISOString().split("T")[0]);
+  const [desde, setDesde] = useState(() => toDateStr(subDays(new Date(), 30)));
+  const [hasta, setHasta] = useState(todayStr);
   const [depto, setDepto] = useState("Todos");
 
   const load = async () => {
+    if (!desde || !hasta) return;
+    if (desde > hasta) {
+      notifyError(new Error("La fecha «Desde» es posterior a «Hasta»."), "Rango no válido");
+      setRows([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const empQuery = {};
-      if (depto !== "Todos") empQuery.departamento = depto;
-      const empRes = await db.entities.Empleado.filter(empQuery, { sort: "apellidos", limit: 500 });
-      const emps = empRes.items || [];
-      setEmpleados(emps);
+      let idsDepto = null;
+      if (depto !== "Todos") {
+        const empRes = await db.entities.Empleado.filterAll({ departamento: depto });
+        idsDepto = new Set(empRes.items.map((e) => e.id));
+      }
 
-      const regRes = await db.entities.RegistroAsistencia.filter(
+      // Se cargan todas las páginas para que los totales no queden cortados.
+      const regRes = await db.entities.RegistroAsistencia.filterAll(
         { fecha: { $gte: desde, $lte: hasta } },
-        { sort: "-fecha", limit: 2000 }
+        { sort: "-fecha" }
       );
       const regs = regRes.items || [];
 
       const byEmp = {};
       regs.forEach((r) => {
-        if (depto !== "Todos") {
-          const e = emps.find((x) => x.id === r.empleado_id);
-          if (!e) return;
-        }
+        if (idsDepto && !idsDepto.has(r.empleado_id)) return;
         if (!byEmp[r.empleado_id]) {
           byEmp[r.empleado_id] = {
             nombre: r.empleado_nombre,
@@ -72,7 +73,9 @@ export default function Informes() {
         row.total++;
       });
 
-      setRows(Object.values(byEmp));
+      setRows(Object.values(byEmp).sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "", "es")));
+    } catch (err) {
+      notifyError(err, "No se pudo generar el informe");
     } finally {
       setLoading(false);
     }

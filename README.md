@@ -21,9 +21,14 @@ supabase/
 ## 1. Crear el proyecto en Supabase
 
 1. Crea un proyecto en <https://supabase.com>.
-2. Abre **SQL Editor**, pega el contenido de
-   `supabase/migrations/20261019000000_esquema_inicial.sql` y ejecútalo.
-   (O con la CLI: `supabase link --project-ref <ref>` y `supabase db push`.)
+2. Abre **SQL Editor** y ejecuta, en este orden, el contenido de:
+   1. `supabase/migrations/20261019000000_esquema_inicial.sql`
+   2. `supabase/migrations/20261019000001_registro_unico_y_admin.sql`
+      (un solo registro de asistencia por empleado y día; si ya había
+      duplicados, los fusiona conservando la entrada más temprana y la salida
+      más tardía).
+
+   O con la CLI: `supabase link --project-ref <ref>` y `supabase db push`.
 
 ## 2. Ejecutar la app en local
 
@@ -35,9 +40,6 @@ npm run dev
 
 Los valores están en Supabase → **Project Settings → API** (`Project URL` y
 la clave `anon public`). Abre <http://localhost:5173>.
-
-> El repositorio no incluye `package-lock.json`; `npm install` lo genera la
-> primera vez. Súbelo al repositorio después.
 
 ## 3. Usuarios y permisos
 

@@ -13,45 +13,42 @@ import {
 } from "recharts";
 import { format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
-
-const estadoBadge = {
-  presente: "bg-emerald-500/10 text-emerald-600",
-  retraso: "bg-amber-500/10 text-amber-600",
-  ausente: "bg-rose-500/10 text-rose-600",
-  vacaciones: "bg-sky-500/10 text-sky-600",
-  permiso: "bg-violet-500/10 text-violet-600",
-};
+import { estadoBadge, todayStr, toDateStr, parseDateStr } from "@/lib/constants";
+import { notifyError } from "@/lib/notify";
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ total: 0, presentes: 0, ausentes: 0, retrasos: 0 });
+  const [stats, setStats] = useState({ total: 0, presentes: 0, retrasos: 0, ausentes: 0, sinFichar: 0 });
   const [chartData, setChartData] = useState([]);
   const [recientes, setRecientes] = useState([]);
 
   useEffect(() => {
     (async () => {
       try {
-        const today = new Date().toISOString().split("T")[0];
+        const today = todayStr();
 
-        const [totalRes, presentesRes, retrasosRes, ausentesRes] = await Promise.all([
-          db.entities.Empleado.count({ estado: "activo" }),
-          db.entities.RegistroAsistencia.count({ fecha: today, estado: "presente" }),
-          db.entities.RegistroAsistencia.count({ fecha: today, estado: "retraso" }),
-          db.entities.RegistroAsistencia.count({ fecha: today, estado: "ausente" }),
+        const [empRes, regRes] = await Promise.all([
+          db.entities.Empleado.filterAll({ estado: "activo" }),
+          db.entities.RegistroAsistencia.filterAll({ fecha: today }),
         ]);
+        const activos = empRes.items;
+        const registrosHoy = regRes.items;
+        const conRegistro = new Set(registrosHoy.map((r) => r.empleado_id));
+        const porEstado = (estado) => registrosHoy.filter((r) => r.estado === estado).length;
 
         setStats({
-          total: totalRes,
-          presentes: presentesRes,
-          retrasos: retrasosRes,
-          ausentes: ausentesRes,
+          total: activos.length,
+          presentes: porEstado("presente"),
+          retrasos: porEstado("retraso"),
+          ausentes: porEstado("ausente"),
+          // Empleados activos sin ningún registro hoy (ni fichaje, ni vacaciones, ni permiso).
+          sinFichar: activos.filter((e) => !conRegistro.has(e.id)).length,
         });
 
-        // Last 7 days chart
+        // Últimos 7 días, con fechas locales.
         const days = [];
         for (let i = 6; i >= 0; i--) {
-          const d = subDays(new Date(), i);
-          days.push(d.toISOString().split("T")[0]);
+          days.push(toDateStr(subDays(new Date(), i)));
         }
         const counts = await Promise.all(
           days.map((d) =>
@@ -63,16 +60,18 @@ export default function Dashboard() {
         );
         setChartData(
           days.map((d, i) => ({
-            fecha: format(new Date(d), "EEE", { locale: es }),
+            fecha: format(parseDateStr(d), "EEE d", { locale: es }),
             presentes: counts[i],
           }))
         );
 
-        const rec = await db.entities.RegistroAsistencia.filter(
-          { fecha: today },
-          { sort: "-created_date", limit: 6 }
+        setRecientes(
+          [...registrosHoy]
+            .sort((a, b) => (b.updated_date || "").localeCompare(a.updated_date || ""))
+            .slice(0, 6)
         );
-        setRecientes(rec.items || []);
+      } catch (err) {
+        notifyError(err, "No se pudo cargar el resumen");
       } finally {
         setLoading(false);
       }
@@ -100,7 +99,13 @@ export default function Dashboard() {
         <StatCard label="Empleados activos" value={stats.total} icon={Users} tone="blue" />
         <StatCard label="Presentes hoy" value={stats.presentes} icon={UserCheck} tone="green" />
         <StatCard label="Retrasos hoy" value={stats.retrasos} icon={Clock} tone="amber" />
-        <StatCard label="Ausentes hoy" value={stats.ausentes} icon={UserX} tone="red" />
+        <StatCard
+          label="Ausentes / sin fichar"
+          value={stats.ausentes + stats.sinFichar}
+          icon={UserX}
+          tone="red"
+          hint={`${stats.ausentes} ausente(s) registrados · ${stats.sinFichar} sin fichar`}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
