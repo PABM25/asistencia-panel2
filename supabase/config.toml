@@ -1,0 +1,7 @@
+# Configuración mínima para la CLI de Supabase (`supabase link`, `supabase db push`,
+# `supabase functions deploy`). El resto se configura en el panel del proyecto.
+project_id = "asistencia-panel"
+
+[functions.notificar-incidencia]
+# La protege la cabecera x-notify-secret, no un JWT de usuario.
+verify_jwt = false
