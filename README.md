@@ -140,13 +140,4 @@ para que todas las rutas sirvan `index.html` (en Vercel/Netlify suele ser
 automático para apps de Vite; en Netlify crea `public/_redirects` con
 `/* /index.html 200`).
 
-## Migrar datos desde Base44
 
-Las tablas tienen las mismas columnas que las entidades originales
-(`Empleado` → `empleado`, `RegistroAsistencia` → `registro_asistencia`,
-`Turno` → `turno`). Exporta cada entidad a CSV desde Base44 e impórtala en
-Supabase con **Table Editor → Import data from CSV**. Importa primero
-`empleado` conservando su columna `id`, para que `empleado_id` de los
-registros y turnos siga apuntando al empleado correcto. Los `id` son de tipo
-texto, así que aceptan tal cual los identificadores de Base44; los registros
-nuevos reciben un UUID automático.
