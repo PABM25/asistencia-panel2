@@ -1,0 +1,33 @@
+# Evita que el proyecto de demo en Supabase se pause por inactividad (el plan
+# gratuito lo pausa tras 7 días sin uso). Cada 3 días hace una consulta a la
+# base de datos de la demo.
+#
+# Necesita dos secretos del repositorio (Settings → Secrets and variables →
+# Actions): DEMO_SUPABASE_URL y DEMO_SUPABASE_ANON_KEY. Sin ellos no hace nada.
+name: Mantener demo activa
+
+on:
+  schedule:
+    - cron: "0 12 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consultar la demo
+        env:
+          URL: ${{ secrets.DEMO_SUPABASE_URL }}
+          KEY: ${{ secrets.DEMO_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
+            echo "Faltan los secretos DEMO_SUPABASE_URL / DEMO_SUPABASE_ANON_KEY: no se hace nada."
+            exit 0
+          fi
+          # Pide la lista de empleados del kiosco público de la demo (toca la base de datos).
+          curl --fail --silent --show-error -o /dev/null \
+            -X POST "$URL/rest/v1/rpc/kiosco_empleados" \
+            -H "apikey: $KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"p_token":"demo-publico-pulso-kiosco-no-usar-en-produccion"}'
+          echo "Demo activa."

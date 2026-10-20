@@ -10,6 +10,8 @@ import GoogleIcon from "@/components/GoogleIcon";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { authErrorMessage } from "@/lib/authErrors";
 import { useAuthSettings } from "@/lib/useAuthSettings";
+import { DEMO, DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/demo";
+import QrKiosco from "@/components/QrKiosco";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -31,6 +33,19 @@ export default function Login() {
     } catch (err) {
       setError(authErrorMessage(err, "Email o contraseña incorrectos."));
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const entrarDemo = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const { error: authErr } = await supabase.auth.signInWithPassword({ email: DEMO_EMAIL, password: DEMO_PASSWORD });
+      if (authErr) throw authErr;
+      window.location.href = "/";
+    } catch (err) {
+      setError(authErrorMessage(err, "No se pudo entrar a la demo."));
       setLoading(false);
     }
   };
@@ -62,6 +77,30 @@ export default function Login() {
         )
       }
     >
+      {DEMO && DEMO_EMAIL && (
+        <div className="mb-6 rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <p className="text-sm font-semibold">Prueba la demo</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Entra como administrador con <strong>{DEMO_EMAIL}</strong> / <strong>{DEMO_PASSWORD}</strong>. Puedes
+            cambiar lo que quieras: los datos se reinician cada noche.
+          </p>
+          <Button className="mt-3 w-full" onClick={entrarDemo} disabled={loading}>
+            Entrar a la demo
+          </Button>
+          <div className="mt-4 flex items-center gap-3 border-t pt-4">
+            <QrKiosco size={88} />
+            <p className="text-xs text-muted-foreground">
+              <strong className="text-foreground">Kiosco de fichaje:</strong> escanea el código con tu teléfono o
+              abre{" "}
+              <Link to="/kiosco" className="font-medium text-primary hover:underline">
+                /kiosco
+              </Link>
+              . Los PIN de prueba aparecen en pantalla.
+            </p>
+          </div>
+        </div>
+      )}
+
       {authSettings.google && (
         <>
           <Button

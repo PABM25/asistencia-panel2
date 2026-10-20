@@ -1,13 +1,18 @@
+import { DEMO, DEMO_KIOSCO_TOKEN } from "@/lib/demo";
+
 // Token del dispositivo kiosco. Lo entrega kiosco_crear() al activar el
-// dispositivo desde el panel y se guarda solo en este navegador.
+// dispositivo desde el panel y se guarda solo en este navegador. En la demo,
+// si no hay uno, se usa el del kiosco público.
 const KEY = "asistencia.kioscoToken";
 
 export function getKioscoToken() {
+  let token = "";
   try {
-    return localStorage.getItem(KEY) || "";
+    token = localStorage.getItem(KEY) || "";
   } catch {
-    return "";
+    // Sin acceso al almacenamiento.
   }
+  return token || (DEMO ? DEMO_KIOSCO_TOKEN : "");
 }
 
 export function setKioscoToken(token) {

@@ -17,7 +17,7 @@ export const leer = (ruta) => readFileSync(`${RAIZ}${ruta}`, "utf8");
 const SUPABASE_SIMULADO = `
 create schema extensions; create extension pgcrypto schema extensions;
 create schema auth; create schema vault; create schema net;
-create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}');
+create table auth.users (id uuid primary key, email text, encrypted_password text, raw_user_meta_data jsonb default '{}');
 create function auth.uid() returns uuid language sql stable
   as $$ select nullif(current_setting('test.uid', true), '')::uuid $$;
 create table vault.decrypted_secrets (name text, decrypted_secret text);

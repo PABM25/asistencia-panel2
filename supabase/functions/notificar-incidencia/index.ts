@@ -7,7 +7,7 @@
 // Secretos necesarios (supabase secrets set ...):
 //   NOTIFY_SECRET   valor compartido con el trigger (cabecera x-notify-secret)
 //   RESEND_API_KEY  clave de https://resend.com
-//   EMAIL_FROM      remitente verificado en Resend, p. ej. "Asistenta Pro <avisos@tudominio.cl>"
+//   EMAIL_FROM      remitente verificado en Resend, p. ej. "Pulso <avisos@tudominio.cl>"
 //   APP_URL         URL pública de la app, p. ej. https://asistencia.tudominio.cl
 // SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY los inyecta Supabase automáticamente.
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -24,7 +24,7 @@ function renderEmail(vars: Record<string, string>, appUrl: string) {
     : "";
   return `<!doctype html><html><body style="margin:0;background:#f6f7f9;font-family:Arial,Helvetica,sans-serif;color:#000">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff">
-<tr><td style="background:#111;padding:20px 36px;color:#fff;font-size:18px;font-weight:700">Asistenta Pro</td></tr>
+<tr><td style="background:#111;padding:20px 36px;color:#fff;font-size:18px;font-weight:700">Pulso</td></tr>
 <tr><td style="padding:40px 36px 8px">
   <div style="font-size:26px;font-weight:700;line-height:1.2">${v.tipo} registrado</div>
   <div style="color:#6b7280;padding-top:8px;font-size:15px">Se ha registrado una incidencia de asistencia que requiere tu atención.</div>
@@ -36,7 +36,7 @@ function renderEmail(vars: Record<string, string>, appUrl: string) {
   <strong>Notas:</strong> ${v.notas}
 </div></td></tr>
 ${boton}
-<tr><td style="background:#f6f7f9;padding:20px 36px;color:#6b7280;font-size:12px">Aviso automático de Asistenta Pro.</td></tr>
+<tr><td style="background:#f6f7f9;padding:20px 36px;color:#6b7280;font-size:12px">Aviso automático de Pulso.</td></tr>
 </table></body></html>`;
 }
 
@@ -47,14 +47,14 @@ function renderResumen(fecha: string, empleados: string[], appUrl: string) {
     : "";
   return `<!doctype html><html><body style="margin:0;background:#f6f7f9;font-family:Arial,Helvetica,sans-serif;color:#000">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff">
-<tr><td style="background:#111;padding:20px 36px;color:#fff;font-size:18px;font-weight:700">Asistenta Pro</td></tr>
+<tr><td style="background:#111;padding:20px 36px;color:#fff;font-size:18px;font-weight:700">Pulso</td></tr>
 <tr><td style="padding:40px 36px 8px">
   <div style="font-size:26px;font-weight:700;line-height:1.2">${empleados.length} ausencia(s) el ${escapeHtml(fecha)}</div>
   <div style="color:#6b7280;padding-top:8px;font-size:15px">Debían trabajar y no registraron ningún fichaje. Se marcaron como ausentes automáticamente.</div>
 </td></tr>
 <tr><td style="padding:24px 36px"><ul style="margin:0;padding-left:20px;font-size:15px;line-height:1.6">${items}</ul></td></tr>
 ${boton}
-<tr><td style="background:#f6f7f9;padding:20px 36px;color:#6b7280;font-size:12px">Resumen automático de Asistenta Pro.</td></tr>
+<tr><td style="background:#f6f7f9;padding:20px 36px;color:#6b7280;font-size:12px">Resumen automático de Pulso.</td></tr>
 </table></body></html>`;
 }
 

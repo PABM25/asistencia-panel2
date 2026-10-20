@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
+import { DEMO } from "@/lib/demo";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -95,7 +96,7 @@ export default function Layout() {
             <Fingerprint className="h-5 w-5" />
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold">AsistenciaPro</span>
+            <span className="text-sm font-semibold">Pulso</span>
             <span className="text-xs text-muted-foreground">Panel de control</span>
           </div>
         </div>
@@ -115,7 +116,7 @@ export default function Layout() {
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <Fingerprint className="h-5 w-5" />
                 </div>
-                <span className="text-sm font-semibold">AsistenciaPro</span>
+                <span className="text-sm font-semibold">Pulso</span>
               </div>
               <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground" aria-label="Cerrar menú">
                 <X className="h-5 w-5" />
@@ -130,6 +131,17 @@ export default function Layout() {
       )}
 
       <div className="lg:pl-64">
+        {DEMO && (
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-primary px-4 py-2 text-center text-xs text-primary-foreground">
+            <span>
+              Estás en la <strong>demo</strong> de Pulso: puedes cambiar lo que quieras, los datos se reinician
+              cada noche.
+            </span>
+            <a href="/kiosco" target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-2">
+              Abrir el kiosco de fichaje ↗
+            </a>
+          </div>
+        )}
         {/* Mobile top bar */}
         <header className="lg:hidden sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/95 backdrop-blur-sm px-4">
           <button onClick={() => setOpen(true)} className="text-muted-foreground hover:text-foreground" aria-label="Abrir menú" aria-expanded={open}>
@@ -137,7 +149,7 @@ export default function Layout() {
           </button>
           <div className="flex items-center gap-2">
             <Fingerprint className="h-5 w-5 text-primary" />
-            <span className="text-sm font-semibold">AsistenciaPro</span>
+            <span className="text-sm font-semibold">Pulso</span>
           </div>
         </header>
 

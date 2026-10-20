@@ -1,4 +1,4 @@
-# Asistenta Pro — panel de asistencia
+# Pulso — control de asistencia
 
 Panel para gestionar empleados, fichajes, turnos, horarios e informes.
 Frontend en React + Vite + Tailwind (shadcn/ui). Backend en **Supabase**:
@@ -18,7 +18,10 @@ supabase/
   migrations/             tablas, seguridad (RLS), kiosco, reglas de asistencia
   functions/notificar-incidencia/   envío de emails con Resend
   datos_demo.sql          datos de prueba (y datos_demo_borrar.sql)
+  demo/configurar_demo.sql  SOLO para el proyecto de la demo pública
 tests/                    pruebas (npm test)
+docs/DEMO.md              cómo publicar la demo
+.github/workflows/        verificación automática y mantener la demo activa
 ```
 
 ## 1. Crear el proyecto en Supabase
@@ -170,7 +173,7 @@ vuelve a desplegarla (`supabase functions deploy notificar-incidencia
    supabase secrets set \
      NOTIFY_SECRET="una-clave-larga-al-azar" \
      RESEND_API_KEY="re_..." \
-     EMAIL_FROM="Asistenta Pro <avisos@tudominio.cl>" \
+     EMAIL_FROM="Pulso <avisos@tudominio.cl>" \
      APP_URL="https://tu-dominio"
    ```
 
@@ -199,8 +202,12 @@ de cambiar una migración o `src/lib/horas.js`.
 
 ## 5. Publicar
 
-`npm run build` genera la carpeta `dist/`, que puedes publicar en Vercel,
-Netlify, Cloudflare Pages o cualquier hosting estático. Configura ahí las
+**Demo pública para mostrar a clientes:** sigue [docs/DEMO.md](docs/DEMO.md)
+(Cloudflare Pages + un proyecto de Supabase solo para la demo, que se reinicia
+cada noche).
+
+`npm run build` genera la carpeta `dist/`, que puedes publicar en Cloudflare
+Pages, Netlify o cualquier hosting estático. Configura ahí las
 variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`, y agrega una regla
 para que todas las rutas sirvan `index.html` (en Vercel/Netlify suele ser
 automático para apps de Vite; en Netlify crea `public/_redirects` con

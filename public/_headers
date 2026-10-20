@@ -1,0 +1,10 @@
+# Cabeceras de seguridad (Cloudflare Pages y Netlify leen este archivo).
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# Los archivos de /assets llevan un hash en el nombre: se pueden guardar en caché para siempre.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

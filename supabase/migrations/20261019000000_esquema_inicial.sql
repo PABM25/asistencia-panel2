@@ -1,4 +1,4 @@
--- Esquema inicial de Asistenta Pro en Supabase.
+-- Esquema inicial de Pulso en Supabase.
 -- Ejecútalo una vez: `supabase db push`, o pégalo en el SQL Editor del panel de Supabase.
 -- AVISO: ejecútala una sola vez, en orden. Volver a ejecutarla después de
 -- migraciones posteriores reemplazaría funciones por versiones antiguas.

@@ -16,6 +16,7 @@ import {
 import { supabase } from "@/api/supabaseClient";
 import { clearKioscoToken, getKioscoToken, mensajeFichaje } from "@/lib/kiosco";
 import { cn } from "@/lib/utils";
+import { DEMO, PINES_DEMO } from "@/lib/demo";
 
 const RESULTADO_MS = 4000; // tiempo que se muestra el resultado
 const INACTIVIDAD_MS = 30000; // vuelve al inicio si nadie toca la pantalla
@@ -223,6 +224,13 @@ export default function Kiosco() {
           <div className="rounded-3xl border bg-card p-6 shadow-xs">
             <p className="text-center text-sm text-muted-foreground">Hola,</p>
             <h2 className="text-center text-2xl font-semibold">{seleccionado.nombre}</h2>
+            {DEMO && PINES_DEMO[seleccionado.id] && (
+              <p className="mt-2 text-center text-xs">
+                <span className="rounded-full bg-amber-500/15 px-2.5 py-1 font-medium text-amber-700">
+                  Demo · PIN de prueba: {PINES_DEMO[seleccionado.id]}
+                </span>
+              </p>
+            )}
             <p className="mt-4 text-center text-sm text-muted-foreground">Escribe tu PIN</p>
             <div className="my-4 flex justify-center gap-3" aria-label={`PIN: ${pin.length} dígitos`}>
               {Array.from({ length: PIN_MAX }, (_, i) => (
@@ -269,6 +277,12 @@ export default function Kiosco() {
         </div>
       ) : (
         <div className="mx-auto max-w-4xl">
+          {DEMO && (
+            <p className="mb-4 rounded-xl bg-amber-500/10 px-4 py-3 text-center text-sm text-amber-800">
+              <strong>Demo:</strong> elige a cualquier empleado; su PIN de prueba aparece al seleccionarlo. Prueba
+              también a equivocarte de PIN 5 veces.
+            </p>
+          )}
           <div className="relative mb-5">
             <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -311,7 +325,7 @@ function Pantalla({ ahora, children }) {
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Fingerprint className="h-5 w-5" />
           </div>
-          <span className="text-lg font-semibold">AsistenciaPro</span>
+          <span className="text-lg font-semibold">Pulso</span>
         </div>
         {ahora && (
           <div className="text-right">
