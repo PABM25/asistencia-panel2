@@ -55,7 +55,7 @@ export default function Informes() {
       const idsDepto = depto === "Todos"
         ? null
         : new Set(empRes.items.filter((e) => e.departamento === depto).map((e) => e.id));
-      // Si aún no se ejecutó la migración de reglas, se usa 1 hora de descanso.
+      // Sin la tabla configuracion (migración de reglas pendiente) se asume 1 hora de descanso.
       const descanso = cfgRes.data?.descanso_minutos ?? 60;
       const turnosPorDia = new Map();
       for (const t of turnoRes.items) {

@@ -9,9 +9,9 @@
 --  * Ausencias automáticas: cada madrugada se marca "ausente" a quien debía
 --    trabajar el día anterior y no fichó (necesita pg_cron, ver README).
 --
--- Ejecútalo DESPUÉS de 20261020000000_kiosco.sql.
--- AVISO: ejecútala una sola vez, en orden. Volver a ejecutarla después de
--- migraciones posteriores reemplazaría funciones por versiones antiguas.
+-- Orden: después de 20261020000000_kiosco.sql.
+-- Ejecútala una sola vez: volver a ejecutarla después de las migraciones
+-- siguientes reemplazaría funciones por versiones anteriores.
 
 -- ---------------------------------------------------------------------------
 -- Ajustes (una sola fila)
@@ -55,7 +55,7 @@ create policy "admin feriado" on public.feriado
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 -- ---------------------------------------------------------------------------
--- Nuevo origen 'sistema' para las ausencias automáticas
+-- Origen 'sistema' para las ausencias automáticas
 -- ---------------------------------------------------------------------------
 alter table public.registro_asistencia
   drop constraint if exists registro_asistencia_registrado_por_check;
@@ -102,7 +102,8 @@ as $$
 $$;
 
 -- ---------------------------------------------------------------------------
--- Fichaje (reemplaza la versión de 20261020000000_kiosco.sql)
+-- Fichaje: redefine _fichar() de 20261020000000_kiosco.sql para aplicar la
+-- tolerancia, el turno del día y el cierre de turnos de noche.
 -- ---------------------------------------------------------------------------
 create or replace function public._fichar(p_empleado_id text, p_tipo text, p_origen text)
 returns jsonb

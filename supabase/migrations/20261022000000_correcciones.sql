@@ -1,20 +1,19 @@
--- Correcciones de la segunda revisión:
---  1. Turnos: no se permiten dos turnos del mismo empleado, el mismo día y a la
---     misma hora de inicio (se eliminan los duplicados que ya existan).
+-- Consistencia de datos y avisos:
+--  1. Turnos: un empleado no puede tener dos turnos que empiecen a la misma
+--     hora el mismo día (se eliminan los duplicados que existan).
 --  2. "Debe trabajar": una sola regla para las ausencias automáticas y para el
 --     resumen del Dashboard (resumen_hoy).
---  3. Los registros y turnos copian el nombre/departamento del empleado: se
---     actualizan solos cuando el empleado cambia.
+--  3. Los registros y turnos guardan una copia del nombre y departamento del
+--     empleado; se actualizan solos cuando el empleado cambia.
 --  4. Al eliminar un empleado se borran sus turnos futuros.
---  5. Avisos por email: las ausencias automáticas se envían en UN resumen
---     diario en vez de un email por ausencia.
---  6. La tarea diaria de ausencias se puede programar desde Ajustes (ya no hay
---     que volver a ejecutar migraciones).
+--  5. Avisos por email: las ausencias automáticas llegan en un solo resumen
+--     diario, no en un email por ausencia.
+--  6. La tarea diaria de ausencias se programa desde Ajustes.
 --  7. Un admin puede desbloquear el PIN de un empleado sin cambiárselo.
 --
--- Ejecútalo DESPUÉS de 20261021000000_reglas_asistencia.sql.
--- IMPORTANTE: no vuelvas a ejecutar migraciones anteriores después de esta;
--- reemplazarían funciones por versiones antiguas.
+-- Orden: después de 20261021000000_reglas_asistencia.sql.
+-- Ejecútala una sola vez: volver a ejecutarla después de las migraciones
+-- siguientes reemplazaría funciones por versiones anteriores.
 
 -- ---------------------------------------------------------------------------
 -- 1) Turnos únicos por empleado, fecha y hora de inicio

@@ -44,11 +44,11 @@ export default function Asistencia() {
   const [filterEstado, setFilterEstado] = useState("Todos");
   const [search, setSearch] = useState("");
 
-  // Fichar
+  // Fichaje rápido
   const [ficharEmp, setFicharEmp] = useState("");
   const [fichando, setFichando] = useState(false);
 
-  // Edit
+  // Registro abierto en el diálogo de edición
   const [editReg, setEditReg] = useState(null);
 
   const loadEmpleados = async () => {
@@ -153,7 +153,7 @@ export default function Asistencia() {
         <p className="text-sm text-muted-foreground">Registro de entradas y salidas</p>
       </div>
 
-      {/* Fichar */}
+      {/* Fichaje rápido */}
       <div className="rounded-xl border bg-card p-5 shadow-xs">
         <div className="flex items-center gap-2 mb-4">
           <Clock className="h-5 w-5 text-primary" />
@@ -184,7 +184,7 @@ export default function Asistencia() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filtros */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -213,7 +213,7 @@ export default function Asistencia() {
         <Button variant="outline" onClick={() => setEditReg({})}>+ Registro manual</Button>
       </div>
 
-      {/* Table */}
+      {/* Registros */}
       <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
         {loading ? (
           <div className="flex h-40 items-center justify-center">

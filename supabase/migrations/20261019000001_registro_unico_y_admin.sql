@@ -1,10 +1,9 @@
 -- 1) Un único registro de asistencia por empleado y día.
 -- 2) Evita que dos registros simultáneos en una base vacía queden ambos como admin.
 --
--- Ejecútalo DESPUÉS de 20261019000000_esquema_inicial.sql (`supabase db push`
--- o pegándolo en el SQL Editor).
--- AVISO: ejecútala una sola vez, en orden. Volver a ejecutarla después de
--- migraciones posteriores reemplazaría funciones por versiones antiguas.
+-- Orden: después de 20261019000000_esquema_inicial.sql.
+-- Ejecútala una sola vez: volver a ejecutarla después de las migraciones
+-- siguientes reemplazaría funciones por versiones anteriores.
 
 -- ---------------------------------------------------------------------------
 -- 1) Fusionar duplicados existentes y añadir la restricción única.

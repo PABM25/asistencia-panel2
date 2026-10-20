@@ -8,9 +8,9 @@
 -- * Un dispositivo solo funciona como kiosco si un admin lo activó desde el
 --   panel (recibe un token secreto que se puede revocar).
 --
--- Ejecútalo DESPUÉS de 20261019000001_registro_unico_y_admin.sql.
--- AVISO: ejecútala una sola vez, en orden. Volver a ejecutarla después de
--- migraciones posteriores reemplazaría funciones por versiones antiguas.
+-- Orden: después de 20261019000001_registro_unico_y_admin.sql.
+-- Ejecútala una sola vez: volver a ejecutarla después de las migraciones
+-- siguientes reemplazaría funciones por versiones anteriores.
 
 -- ---------------------------------------------------------------------------
 -- Zona horaria de la empresa (cámbiala aquí si hace falta).

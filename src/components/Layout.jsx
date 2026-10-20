@@ -89,7 +89,7 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Sidebar desktop */}
+      {/* Menú lateral (escritorio) */}
       <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 flex-col border-r bg-background">
         <div className="flex h-16 items-center gap-2.5 border-b px-6">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -106,7 +106,7 @@ export default function Layout() {
         <UserFooter />
       </aside>
 
-      {/* Mobile drawer */}
+      {/* Menú desplegable (móvil) */}
       {open && (
         <div className="lg:hidden fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
@@ -142,7 +142,7 @@ export default function Layout() {
             </a>
           </div>
         )}
-        {/* Mobile top bar */}
+        {/* Barra superior (móvil) */}
         <header className="lg:hidden sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/95 backdrop-blur-sm px-4">
           <button onClick={() => setOpen(true)} className="text-muted-foreground hover:text-foreground" aria-label="Abrir menú" aria-expanded={open}>
             <Menu className="h-5 w-5" />

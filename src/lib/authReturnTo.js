@@ -1,20 +1,19 @@
-// Shared by the auth pages (Login, Register, and any page that resumes a flow
-// after sign-in, e.g. a protected page). Keep the redirect
-// validation in one place — it is security-sensitive and easy to drift.
+// Validación del parámetro ?returnTo= de las pantallas de acceso. Está en un
+// solo lugar a propósito: es sensible para la seguridad.
 
-// Resolve ?returnTo= to a safe same-origin path, else "/".
+// Devuelve una ruta segura del mismo sitio, o "/" si no lo es.
 //
-// The same-origin check alone is not enough: a value like /.//evil.com or
-// /\evil.com parses same-origin but normalizes to a protocol-relative
-// //evil.com when assigned to location.href — an open redirect. So require the
-// resolved path to be exactly one leading slash (no "//" prefix, no backslash).
+// Comprobar que el origen sea el mismo no basta: valores como /.//malo.com o
+// /\malo.com pasan esa prueba, pero al asignarlos a location.href se
+// convierten en //malo.com y llevan a otro sitio (redirección abierta). Por eso
+// la ruta debe empezar con una sola barra y no contener barras invertidas.
 export function safeReturnTo() {
   const raw = new URLSearchParams(window.location.search).get("returnTo");
   if (!raw) return "/";
   try {
     const url = new URL(raw, window.location.origin);
     if (url.origin !== window.location.origin) return "/";
-    // Never carry auth tokens or codes back into the app URL.
+    // Nunca se arrastran tokens ni códigos de acceso a la URL de la app.
     for (const p of ["access_token", "refresh_token", "code", "token_hash"]) {
       url.searchParams.delete(p);
     }

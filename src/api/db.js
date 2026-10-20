@@ -1,13 +1,15 @@
-// Capa de datos sobre Supabase.
+// Capa de datos sobre Supabase. Las páginas no usan el cliente de Supabase
+// directamente: pasan por aquí, que limpia los datos y traduce los errores.
 //
-// Interfaz sencilla por entidad:
-//   db.entities.Empleado.filter(query, { sort, limit })  -> { items }
-//   db.entities.Empleado.filterAll(query, { sort })      -> { items } (todas las páginas)
-//   db.entities.Empleado.count(query)                    -> number
+// Por entidad:
+//   db.entities.Empleado.filter(query, { sort, limit, skip })  -> { items }
+//   db.entities.Empleado.filterAll(query, { sort })            -> { items } (todas las páginas)
+//   db.entities.Empleado.count(query)                          -> number
 //   db.entities.Empleado.create(data) / update(id, data) / delete(id)
-//   db.entities.Turno.bulkCreate([...])
+//   db.entities.Turno.bulkCreate([...]) / bulkCreateIgnoringDuplicates([...], columnas)
+// Funciones de la base de datos: rpc("nombre", { parametros })
 //
-// Las consultas aceptan el estilo de filtros que ya usa la app:
+// Formato de las consultas:
 //   { campo: valor }                        igualdad
 //   { campo: { $gte, $lte, $gt, $lt, $ne } } comparaciones
 //   { campo: { $in: [...] } }               lista de valores

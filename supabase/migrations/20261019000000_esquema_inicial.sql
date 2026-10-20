@@ -1,7 +1,9 @@
--- Esquema inicial de Pulso en Supabase.
--- Ejecútalo una vez: `supabase db push`, o pégalo en el SQL Editor del panel de Supabase.
--- AVISO: ejecútala una sola vez, en orden. Volver a ejecutarla después de
--- migraciones posteriores reemplazaría funciones por versiones antiguas.
+-- Esquema base de Pulso: perfiles y roles, empleados, registros de asistencia,
+-- turnos, seguridad (RLS) y aviso por email de incidencias.
+--
+-- Primera migración: `supabase db push`, o pégala en el SQL Editor de Supabase.
+-- Ejecútala una sola vez: volver a ejecutarla después de las migraciones
+-- siguientes reemplazaría funciones por versiones anteriores.
 
 create extension if not exists pgcrypto;
 create extension if not exists pg_net;
@@ -89,7 +91,7 @@ create table if not exists public.empleado (
 create table if not exists public.registro_asistencia (
   id               text primary key default gen_random_uuid()::text,
   -- Sin clave foránea a propósito: el historial se conserva aunque se borre el empleado.
-  -- Los id son texto para poder importar los id originales de Base44.
+  -- Los id son texto para poder importar identificadores de otros sistemas.
   empleado_id      text not null,
   empleado_nombre  text,
   fecha            date not null,
