@@ -21,6 +21,8 @@ import { Download, FileBarChart } from "lucide-react";
 import { subDays } from "date-fns";
 import { DEPARTAMENTOS, todayStr, toDateStr } from "@/lib/constants";
 import { notifyError } from "@/lib/notify";
+import { formatoHoras, horasRegistro } from "@/lib/horas";
+import { supabase } from "@/api/supabaseClient";
 
 const departamentos = ["Todos", ...DEPARTAMENTOS];
 
@@ -41,17 +43,25 @@ export default function Informes() {
     }
     setLoading(true);
     try {
-      let idsDepto = null;
-      if (depto !== "Todos") {
-        const empRes = await db.entities.Empleado.filterAll({ departamento: depto });
-        idsDepto = new Set(empRes.items.map((e) => e.id));
-      }
-
+      const rango = { fecha: { $gte: desde, $lte: hasta } };
       // Se cargan todas las páginas para que los totales no queden cortados.
-      const regRes = await db.entities.RegistroAsistencia.filterAll(
-        { fecha: { $gte: desde, $lte: hasta } },
-        { sort: "-fecha" }
-      );
+      const [empRes, regRes, turnoRes, cfgRes] = await Promise.all([
+        db.entities.Empleado.filterAll({}),
+        db.entities.RegistroAsistencia.filterAll(rango, { sort: "-fecha" }),
+        db.entities.Turno.filterAll(rango),
+        supabase.from("configuracion").select("descanso_minutos").maybeSingle(),
+      ]);
+      const empleados = new Map(empRes.items.map((e) => [e.id, e]));
+      const idsDepto = depto === "Todos"
+        ? null
+        : new Set(empRes.items.filter((e) => e.departamento === depto).map((e) => e.id));
+      // Si aún no se ejecutó la migración de reglas, se usa 1 hora de descanso.
+      const descanso = cfgRes.data?.descanso_minutos ?? 60;
+      const turnosPorDia = new Map();
+      for (const t of turnoRes.items) {
+        const k = `${t.empleado_id}|${t.fecha}`;
+        turnosPorDia.set(k, [...(turnosPorDia.get(k) || []), t]);
+      }
       const regs = regRes.items || [];
 
       const byEmp = {};
@@ -66,11 +76,21 @@ export default function Informes() {
             vacaciones: 0,
             permiso: 0,
             total: 0,
+            minutos: 0,
+            extra: 0,
+            sinSalida: 0,
           };
         }
         const row = byEmp[r.empleado_id];
         if (row[r.estado] !== undefined) row[r.estado]++;
         row.total++;
+        const h = horasRegistro(r, turnosPorDia.get(`${r.empleado_id}|${r.fecha}`), empleados.get(r.empleado_id), descanso);
+        if (h) {
+          row.minutos += h.trabajado;
+          row.extra += h.extra;
+        } else if (r.hora_entrada && !r.hora_salida) {
+          row.sinSalida++;
+        }
       });
 
       setRows(Object.values(byEmp).sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "", "es")));
@@ -88,9 +108,9 @@ export default function Informes() {
   }, [desde, hasta, depto]);
 
   const exportCSV = () => {
-    const header = ["Empleado", "Presente", "Retraso", "Ausente", "Vacaciones", "Permiso", "Total"];
+    const header = ["Empleado", "Presente", "Retraso", "Ausente", "Vacaciones", "Permiso", "Total días", "Horas trabajadas", "Horas extra", "Días sin salida"];
     const lines = rows.map((r) =>
-      [r.nombre, r.presente, r.retraso, r.ausente, r.vacaciones, r.permiso, r.total]
+      [r.nombre, r.presente, r.retraso, r.ausente, r.vacaciones, r.permiso, r.total, formatoHoras(r.minutos), formatoHoras(r.extra), r.sinSalida]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
         .join(",")
     );
@@ -111,8 +131,10 @@ export default function Informes() {
       ausente: acc.ausente + r.ausente,
       vacaciones: acc.vacaciones + r.vacaciones,
       permiso: acc.permiso + r.permiso,
+      minutos: acc.minutos + r.minutos,
+      extra: acc.extra + r.extra,
     }),
-    { presente: 0, retraso: 0, ausente: 0, vacaciones: 0, permiso: 0 }
+    { presente: 0, retraso: 0, ausente: 0, vacaciones: 0, permiso: 0, minutos: 0, extra: 0 }
   );
 
   return (
@@ -150,13 +172,15 @@ export default function Informes() {
       </div>
 
       {/* Totales */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         {[
           { label: "Presentes", value: totales.presente, color: "text-emerald-600" },
           { label: "Retrasos", value: totales.retraso, color: "text-amber-600" },
           { label: "Ausentes", value: totales.ausente, color: "text-rose-600" },
           { label: "Vacaciones", value: totales.vacaciones, color: "text-sky-600" },
           { label: "Permisos", value: totales.permiso, color: "text-violet-600" },
+          { label: "Horas trabajadas", value: formatoHoras(totales.minutos), color: "" },
+          { label: "Horas extra", value: formatoHoras(totales.extra), color: "text-orange-600" },
         ].map((t) => (
           <div key={t.label} className="rounded-xl border bg-card p-4 shadow-sm">
             <p className="text-xs text-muted-foreground">{t.label}</p>
@@ -186,7 +210,9 @@ export default function Informes() {
                   <TableHead className="text-center">Ausente</TableHead>
                   <TableHead className="text-center">Vacaciones</TableHead>
                   <TableHead className="text-center">Permiso</TableHead>
-                  <TableHead className="text-center">Total</TableHead>
+                  <TableHead className="text-center">Días</TableHead>
+                  <TableHead className="text-center" title="Horas entre entrada y salida, menos el descanso">Horas</TableHead>
+                  <TableHead className="text-center" title="Horas por encima de la jornada esperada (turno u horario)">Extra</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -199,6 +225,20 @@ export default function Informes() {
                     <TableCell className="text-center text-sky-600">{r.vacaciones}</TableCell>
                     <TableCell className="text-center text-violet-600">{r.permiso}</TableCell>
                     <TableCell className="text-center font-semibold">{r.total}</TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      {formatoHoras(r.minutos)}
+                      {r.sinSalida > 0 && (
+                        <span
+                          className="ml-1 text-xs text-amber-600"
+                          title={`${r.sinSalida} día(s) con entrada pero sin salida: no suman horas`}
+                        >
+                          ({r.sinSalida} sin salida)
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center tabular-nums text-orange-600">
+                      {r.extra > 0 ? formatoHoras(r.extra) : "—"}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

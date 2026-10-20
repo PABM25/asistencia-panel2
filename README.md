@@ -28,6 +28,8 @@ supabase/
       duplicados, los fusiona conservando la entrada más temprana y la salida
       más tardía).
    3. `supabase/migrations/20261020000000_kiosco.sql` (modo kiosco con PIN).
+   4. `supabase/migrations/20261021000000_reglas_asistencia.sql` (tolerancia,
+      turnos de noche, ausencias automáticas, feriados y página Ajustes).
 
    O con la CLI: `supabase link --project-ref <ref>` y `supabase db push`.
 
@@ -99,6 +101,29 @@ Detalles:
   rápido del panel, con origen `admin`.
 - Si el navegador borra los datos del sitio (o usas modo incógnito), el
   dispositivo pierde la activación y hay que activarlo de nuevo.
+
+## Reglas de asistencia (página Ajustes)
+
+- **Retraso:** se compara la hora de entrada con el **turno del día** (si el
+  empleado tiene uno asignado) o con su **horario fijo**, más los minutos de
+  **tolerancia** (5 por defecto).
+- **Turnos de noche:** si alguien marca la salida antes del mediodía y su
+  jornada de ayer cruzaba la medianoche (p. ej. 22:00–06:00) y quedó abierta,
+  la salida cierra la jornada de ayer.
+- **Horas trabajadas y extra** (Informes): entrada a salida, menos el descanso
+  del turno o el descanso por defecto (solo en jornadas de más de 6 horas). Las
+  horas extra son lo que supera la jornada esperada. Los días con entrada pero
+  sin salida no suman horas y se indican aparte.
+- **Ausencias automáticas:** cada madrugada se marca "ausente" (origen
+  `sistema`) a quien debía trabajar el día anterior y no tiene ningún registro.
+  Debía trabajar si tenía turno ese día o, si no usa turnos esa semana, si era
+  día laboral y no feriado. Los feriados se cargan en *Ajustes*.
+
+  Para que corra sola hace falta **pg_cron**: en Supabase ve a *Database →
+  Extensions*, activa `pg_cron` y vuelve a ejecutar
+  `20261021000000_reglas_asistencia.sql`. *Ajustes* indica si la tarea quedó
+  programada; también permite marcar a mano las ausencias de un día.
+  Cada ausencia marcada envía el email de aviso, si los avisos están configurados.
 
 ## 4. Avisos por email de retrasos y ausencias
 

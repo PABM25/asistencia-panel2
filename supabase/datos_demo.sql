@@ -105,7 +105,7 @@ select
   fecha,
   case estado_dia
     when 'presente' then to_char(horario_entrada::time - make_interval(mins => m % 15), 'HH24:MI')
-    when 'retraso'  then to_char(horario_entrada::time + make_interval(mins => 5 + m), 'HH24:MI')
+    when 'retraso'  then to_char(horario_entrada::time + make_interval(mins => 6 + m), 'HH24:MI')
   end,
   case when estado_dia in ('presente', 'retraso')
     then to_char(horario_salida::time + make_interval(mins => m % 20), 'HH24:MI')

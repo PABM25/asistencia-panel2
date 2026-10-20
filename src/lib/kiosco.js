@@ -42,7 +42,8 @@ export function mensajeFichaje(r) {
   if (r?.ok) {
     const accion = r.tipo === "entrada" ? "Entrada" : "Salida";
     const retraso = r.tipo === "entrada" && r.estado === "retraso" ? " · con retraso" : "";
-    return { ok: true, titulo: `${accion} registrada`, detalle: `${r.nombre} · ${r.hora}${retraso}` };
+    const noche = r.turno_noche ? " · cierra el turno de anoche" : "";
+    return { ok: true, titulo: `${accion} registrada`, detalle: `${r.nombre} · ${r.hora}${retraso}${noche}` };
   }
   const textos = {
     ya_fichado: `${r?.nombre || "El empleado"} ya marcó la ${r?.tipo} hoy a las ${r?.hora}.`,

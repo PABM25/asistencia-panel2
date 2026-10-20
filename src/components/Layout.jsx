@@ -12,6 +12,7 @@ import {
   CalendarRange,
   LogOut,
   TabletSmartphone,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
@@ -24,6 +25,7 @@ const navItems = [
   { to: "/horarios", label: "Horarios", icon: CalendarClock },
   { to: "/informes", label: "Informes", icon: FileBarChart },
   { to: "/kioscos", label: "Kiosco", icon: TabletSmartphone },
+  { to: "/ajustes", label: "Ajustes", icon: Settings },
 ];
 
 function NavLinks({ onNavigate }) {

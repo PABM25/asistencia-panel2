@@ -22,6 +22,7 @@ const Horarios = lazy(() => import('@/pages/Horarios'));
 const Turnos = lazy(() => import('@/pages/Turnos'));
 const Informes = lazy(() => import('@/pages/Informes'));
 const Kioscos = lazy(() => import('@/pages/Kioscos'));
+const Ajustes = lazy(() => import('@/pages/Ajustes'));
 const Kiosco = lazy(() => import('@/pages/Kiosco'));
 
 const Spinner = () => (
@@ -68,6 +69,7 @@ const AuthenticatedApp = () => {
             <Route path="/horarios" element={<Horarios />} />
             <Route path="/informes" element={<Informes />} />
             <Route path="/kioscos" element={<Kioscos />} />
+            <Route path="/ajustes" element={<Ajustes />} />
           </Route>
         </Route>
         <Route path="*" element={<PageNotFound />} />
