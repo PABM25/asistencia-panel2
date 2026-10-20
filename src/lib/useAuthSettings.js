@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { supabaseAnonKey, supabaseUrl } from "@/api/supabaseClient";
 
 // Consulta la configuración pública de Supabase Auth para mostrar solo las
 // opciones que están activadas:
@@ -10,8 +11,8 @@ export function useAuthSettings() {
   const [settings, setSettings] = useState({ google: false, signup: true, loaded: false });
 
   useEffect(() => {
-    const url = import.meta.env.VITE_SUPABASE_URL;
-    const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const url = supabaseUrl;
+    const key = supabaseAnonKey;
     if (!url || !key) return;
     let cancelled = false;
     fetch(`${url}/auth/v1/settings`, { headers: { apikey: key } })
