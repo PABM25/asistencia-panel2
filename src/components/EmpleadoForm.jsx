@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { db } from "@/api/db";
+import { db, rpc } from "@/api/db";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { DEPARTAMENTOS as departamentos, todayStr } from "@/lib/constants";
 import { notifyError } from "@/lib/notify";
+import { validarPin } from "@/lib/kiosco";
 
 export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
   const [form, setForm] = useState({
@@ -34,6 +35,9 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
     horario_salida: "17:00",
   });
   const [saving, setSaving] = useState(false);
+  // PIN del kiosco: se guarda aparte, cifrado, y nunca se vuelve a mostrar.
+  const [pin, setPin] = useState("");
+  const [quitarPin, setQuitarPin] = useState(false);
 
   useEffect(() => {
     if (empleado) {
@@ -63,6 +67,8 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
         horario_salida: "17:00",
       });
     }
+    setPin("");
+    setQuitarPin(false);
   }, [empleado, open]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -73,12 +79,23 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
       notifyError(new Error("El nombre y los apellidos son obligatorios."), "Faltan datos");
       return;
     }
+    const problemaPin = pin ? validarPin(pin) : "";
+    if (problemaPin) {
+      notifyError(new Error(problemaPin), "PIN no válido");
+      return;
+    }
     setSaving(true);
     try {
-      if (empleado) {
-        await db.entities.Empleado.update(empleado.id, form);
-      } else {
-        await db.entities.Empleado.create(form);
+      const guardado = empleado
+        ? await db.entities.Empleado.update(empleado.id, form)
+        : await db.entities.Empleado.create(form);
+      if (pin || quitarPin) {
+        try {
+          await rpc("empleado_set_pin", { p_empleado_id: guardado.id, p_pin: quitarPin ? null : pin });
+        } catch (err) {
+          // El empleado ya quedó guardado; solo falló el PIN.
+          notifyError(err, "Empleado guardado, pero no se pudo cambiar el PIN");
+        }
       }
       onSaved();
       onClose();
@@ -160,6 +177,35 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
                 <SelectItem value="inactivo">Inactivo</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid gap-2 rounded-lg border bg-muted/30 p-3">
+            <Label htmlFor="pin">PIN para el kiosco</Label>
+            <Input
+              id="pin"
+              type="password"
+              inputMode="numeric"
+              autoComplete="new-password"
+              maxLength={6}
+              value={pin}
+              disabled={quitarPin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+              placeholder={empleado?.tiene_pin ? "Tiene PIN · escribe uno nuevo para cambiarlo" : "4 a 6 dígitos"}
+            />
+            <p className="text-xs text-muted-foreground">
+              {empleado?.tiene_pin
+                ? "Deja el campo vacío para mantener el PIN actual. Asignar uno nuevo también lo desbloquea."
+                : "Sin PIN, el empleado no podrá marcar en el kiosco."}
+            </p>
+            {empleado?.tiene_pin && (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={quitarPin}
+                  onChange={(e) => { setQuitarPin(e.target.checked); setPin(""); }}
+                />
+                Quitar el PIN
+              </label>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>

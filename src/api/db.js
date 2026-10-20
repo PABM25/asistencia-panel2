@@ -240,6 +240,14 @@ function makeEntity(schema) {
   };
 }
 
+// Llama a una función de la base de datos (supabase/migrations) y lanza un
+// Error legible si falla.
+export async function rpc(fn, args = {}) {
+  const { data, error } = await supabase.rpc(fn, args);
+  raise(error);
+  return data;
+}
+
 export const db = {
   entities: Object.fromEntries(
     Object.entries(SCHEMAS).map(([name, schema]) => [name, makeEntity(schema)])

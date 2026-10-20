@@ -27,6 +27,7 @@ supabase/
       (un solo registro de asistencia por empleado y día; si ya había
       duplicados, los fusiona conservando la entrada más temprana y la salida
       más tardía).
+   3. `supabase/migrations/20261020000000_kiosco.sql` (modo kiosco con PIN).
 
    O con la CLI: `supabase link --project-ref <ref>` y `supabase db push`.
 
@@ -69,6 +70,35 @@ la clave `anon public`). Abre <http://localhost:5173>.
   error y el login con email sigue funcionando.
 - Para producción conviene configurar un SMTP propio en *Auth → SMTP*; el de
   Supabase tiene un límite bajo de emails por hora.
+
+## Kiosco de fichaje
+
+Los empleados marcan su entrada y salida desde un dispositivo en la entrada
+(tablet o computador), eligiendo su nombre y escribiendo su PIN. No necesitan
+cuenta.
+
+1. **Asigna un PIN** a cada empleado en *Empleados → editar → PIN para el
+   kiosco* (4 a 6 dígitos; se rechazan PIN obvios como 1111 o 1234). El PIN se
+   guarda cifrado y no se puede volver a ver; si alguien lo olvida, asígnale
+   uno nuevo.
+2. **Activa el dispositivo:** en la tablet, inicia sesión como administrador,
+   ve a *Kiosco* y pulsa *Activar este dispositivo como kiosco*. Se cierra la
+   sesión y la tablet queda en `/kiosco`.
+3. Para dejar de usar un dispositivo (pérdida, cambio), pulsa *Revocar* en la
+   misma página: deja de funcionar al instante.
+
+Detalles:
+
+- La hora la pone el servidor en la zona horaria `America/Santiago` (función
+  `zona_horaria()` en la migración), no el reloj del dispositivo.
+- Tras 5 PIN incorrectos, el empleado queda bloqueado 5 minutos. Asignarle un
+  PIN nuevo lo desbloquea.
+- No se puede marcar dos veces la entrada o la salida del mismo día; para
+  corregir una hora, edita el registro en *Asistencia*.
+- Los registros del kiosco aparecen con origen `empleado`; los del fichaje
+  rápido del panel, con origen `admin`.
+- Si el navegador borra los datos del sitio (o usas modo incógnito), el
+  dispositivo pierde la activación y hay que activarlo de nuevo.
 
 ## 4. Avisos por email de retrasos y ausencias
 

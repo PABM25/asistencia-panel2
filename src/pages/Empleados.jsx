@@ -142,7 +142,14 @@ export default function Empleados() {
                 {empleados.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell>
-                      <div className="font-medium">{fullName(e)}</div>
+                      <div className="font-medium">
+                        {fullName(e)}
+                        {e.estado === "activo" && !e.tiene_pin && (
+                          <span className="ml-2 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                            Sin PIN
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground">{e.email}</div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{e.departamento}</TableCell>

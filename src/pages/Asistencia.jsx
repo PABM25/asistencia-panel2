@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { db } from "@/api/db";
+import { db, rpc } from "@/api/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,8 +30,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { ESTADOS_ASISTENCIA as estados, estadoBadge, todayStr, parseDateStr } from "@/lib/constants";
 import { notifyError, notifySuccess } from "@/lib/notify";
-
-const nowTime = () => format(new Date(), "HH:mm");
+import { mensajeFichaje } from "@/lib/kiosco";
 
 export default function Asistencia() {
   const [empleados, setEmpleados] = useState([]);
@@ -86,73 +85,18 @@ export default function Asistencia() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterFecha, filterEstado, search]);
 
-  const empName = (id) => {
-    const e = empleados.find((x) => x.id === id);
-    return e ? `${e.nombre} ${e.apellidos}` : "";
-  };
-
+  // La hora y las reglas (retraso, fichaje repetido) las aplica el servidor,
+  // igual que en el kiosco. Ver admin_fichar en supabase/migrations.
   const fichar = async (tipo) => {
     if (!ficharEmp) return;
     setFichando(true);
     try {
-      const nombre = empName(ficharEmp);
-      const fecha = todayStr();
-      const hora = nowTime();
-      // Hay como máximo un registro por empleado y día (restricción única en la base de datos).
-      const existing = await db.entities.RegistroAsistencia.filter(
-        { empleado_id: ficharEmp, fecha },
-        { limit: 1 }
-      );
-      const rec = (existing.items || [])[0];
-      if (tipo === "entrada") {
-        if (rec?.hora_entrada) {
-          notifyError(
-            new Error(`${nombre} ya tiene la entrada marcada a las ${rec.hora_entrada}. Para cambiarla, edita el registro.`),
-            "Entrada ya registrada"
-          );
-          return;
-        }
-        const horario = empleados.find((x) => x.id === ficharEmp);
-        let estado = "presente";
-        if (horario && horario.horario_entrada && hora > horario.horario_entrada) {
-          estado = "retraso";
-        }
-        if (rec) {
-          // Vacaciones, permiso o un retraso ya anotado se respetan; el resto se recalcula.
-          const recalcular = rec.estado === "ausente" || rec.estado === "presente";
-          await db.entities.RegistroAsistencia.update(rec.id, {
-            hora_entrada: hora,
-            estado: recalcular ? estado : rec.estado,
-            registrado_por: "empleado",
-          });
-        } else {
-          await db.entities.RegistroAsistencia.create({
-            empleado_id: ficharEmp,
-            empleado_nombre: nombre,
-            fecha,
-            hora_entrada: hora,
-            estado,
-            registrado_por: "empleado",
-          });
-        }
-        notifySuccess("Entrada registrada", `${nombre} · ${hora}${estado === "retraso" ? " (retraso)" : ""}`);
-      } else {
-        if (rec) {
-          await db.entities.RegistroAsistencia.update(rec.id, {
-            hora_salida: hora,
-          });
-        } else {
-          await db.entities.RegistroAsistencia.create({
-            empleado_id: ficharEmp,
-            empleado_nombre: nombre,
-            fecha,
-            hora_salida: hora,
-            estado: "presente",
-            registrado_por: "empleado",
-          });
-        }
-        notifySuccess("Salida registrada", `${nombre} · ${hora}`);
+      const m = mensajeFichaje(await rpc("admin_fichar", { p_empleado_id: ficharEmp, p_tipo: tipo }));
+      if (!m.ok) {
+        notifyError(new Error(m.detalle), m.titulo);
+        return;
       }
+      notifySuccess(m.titulo, m.detalle);
       setFicharEmp("");
       loadRegistros();
     } catch (err) {

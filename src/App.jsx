@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -21,6 +21,8 @@ const Asistencia = lazy(() => import('@/pages/Asistencia'));
 const Horarios = lazy(() => import('@/pages/Horarios'));
 const Turnos = lazy(() => import('@/pages/Turnos'));
 const Informes = lazy(() => import('@/pages/Informes'));
+const Kioscos = lazy(() => import('@/pages/Kioscos'));
+const Kiosco = lazy(() => import('@/pages/Kiosco'));
 
 const Spinner = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -30,6 +32,16 @@ const Spinner = () => (
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, authError } = useAuth();
+  const { pathname } = useLocation();
+
+  // El kiosco no usa la sesión: funciona con el token del dispositivo.
+  if (pathname === '/kiosco') {
+    return (
+      <Suspense fallback={<Spinner />}>
+        <Kiosco />
+      </Suspense>
+    );
+  }
 
   if (isLoadingAuth) {
     return <Spinner />;
@@ -55,6 +67,7 @@ const AuthenticatedApp = () => {
             <Route path="/turnos" element={<Turnos />} />
             <Route path="/horarios" element={<Horarios />} />
             <Route path="/informes" element={<Informes />} />
+            <Route path="/kioscos" element={<Kioscos />} />
           </Route>
         </Route>
         <Route path="*" element={<PageNotFound />} />

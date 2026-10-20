@@ -11,6 +11,7 @@ import {
   Fingerprint,
   CalendarRange,
   LogOut,
+  TabletSmartphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
@@ -22,6 +23,7 @@ const navItems = [
   { to: "/turnos", label: "Turnos", icon: CalendarRange },
   { to: "/horarios", label: "Horarios", icon: CalendarClock },
   { to: "/informes", label: "Informes", icon: FileBarChart },
+  { to: "/kioscos", label: "Kiosco", icon: TabletSmartphone },
 ];
 
 function NavLinks({ onNavigate }) {
