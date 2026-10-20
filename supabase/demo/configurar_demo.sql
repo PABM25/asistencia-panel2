@@ -29,6 +29,9 @@ begin;
 -- empleados extra son de visitantes y se permite volver a ejecutarlo.)
 do $$
 begin
+  if to_regprocedure('public._cargar_datos_demo(boolean)') is null then
+    raise exception 'Primero ejecuta supabase/datos_demo.sql en el SQL Editor (crea los datos de prueba que usa la demo). No se hizo ningún cambio.';
+  end if;
   if to_regclass('public.demo_config') is null
      and exists (select 1 from public.empleado where id not like 'demo-%') then
     raise exception 'Este proyecto tiene empleados que no son de prueba. configurar_demo.sql es SOLO para un proyecto de demo; no se hizo ningún cambio.';
@@ -46,7 +49,7 @@ alter table public.demo_config enable row level security;   -- sin políticas: n
 revoke all on public.demo_config from anon, authenticated;
 
 insert into public.demo_config (id, email, password)
-values (1, 'bemaker.dev@gmail.com', 'demo1234')    
+values (1, 'demo@pulso.cl', 'demo1234')    
 on conflict (id) do update set email = excluded.email, password = excluded.password;
 
 -- 2) Reinicio ----------------------------------------------------------------

@@ -5,14 +5,24 @@ import { crearBase, leer } from "./helpers/db.js";
 const TOKEN = "demo-publico-pulso-kiosco-no-usar-en-produccion";
 const DEMO_ID = "00000000-0000-0000-0000-0000000000de";
 const configurar = leer("supabase/demo/configurar_demo.sql");
+// La cuenta demo se lee del propio script (cada uno pone la suya).
+const [, EMAIL, PASSWORD] = configurar.match(/insert into public\.demo_config[\s\S]*?values \(1, '([^']+)', '([^']+)'\)/);
 
 test("no se instala en un proyecto con empleados reales", async () => {
   const b = await crearBase();
+  await b.db.exec(leer("supabase/datos_demo.sql"));
   await b.db.exec("insert into public.empleado (id, nombre, apellidos) values ('real-1', 'Real', 'Persona')");
   await assert.rejects(b.db.exec(configurar), /SOLO para un proyecto de demo/);
   await b.db.exec("rollback"); // el SQL Editor de Supabase deshace la transacción solo
   assert.equal(await b.uno("select to_regclass('public.demo_config')::text"), null);
-  assert.equal(await b.uno("select count(*)::int from public.empleado"), 1);
+  assert.equal(await b.uno("select count(*)::int from public.empleado where id = 'real-1'"), 1);
+});
+
+test("si falta datos_demo.sql lo dice con un mensaje claro", async () => {
+  const b = await crearBase();
+  await assert.rejects(b.db.exec(configurar), /Primero ejecuta supabase\/datos_demo\.sql/);
+  await b.db.exec("rollback");
+  assert.equal(await b.uno("select to_regclass('public.demo_config')::text"), null);
 });
 
 let b;
@@ -22,16 +32,16 @@ const ficharKiosco = async (emp, pin) =>
 before(async () => {
   b = await crearBase();
   await b.db.exec(leer("supabase/datos_demo.sql"));
-  await b.db.exec(`insert into auth.users (id, email) values ('${DEMO_ID}', 'demo@pulso.cl')`);
+  await b.db.exec(`insert into auth.users (id, email) values ('${DEMO_ID}', '${EMAIL}')`);
   await b.db.exec("delete from net.enviados");
   await b.db.exec(configurar);
 });
 
 test("configura la demo: datos, kiosco público y cuenta demo admin", async () => {
   assert.equal(await b.uno("select count(*)::int from public.empleado"), 12);
-  assert.equal(await b.uno("select role from public.profiles where email = 'demo@pulso.cl'"), "admin");
+  assert.equal(await b.uno(`select role from public.profiles where id = '${DEMO_ID}'`), "admin");
   assert.equal(
-    await b.uno(`select encrypted_password = extensions.crypt('demo1234', encrypted_password) from auth.users where id = '${DEMO_ID}'`),
+    await b.uno(`select encrypted_password = extensions.crypt('${PASSWORD}', encrypted_password) from auth.users where id = '${DEMO_ID}'`),
     true
   );
   assert.equal(await b.uno("select count(*)::int from net.enviados"), 0, "sin emails");
@@ -62,7 +72,7 @@ test("el reinicio deshace lo que hagan los visitantes", async () => {
   assert.equal(await b.uno("select tolerancia_minutos from public.configuracion"), 5);
   assert.equal(await b.uno("select role from public.profiles where id = '" + DEMO_ID + "'"), "admin");
   assert.equal(
-    await b.uno(`select encrypted_password = extensions.crypt('demo1234', encrypted_password) from auth.users where id = '${DEMO_ID}'`),
+    await b.uno(`select encrypted_password = extensions.crypt('${PASSWORD}', encrypted_password) from auth.users where id = '${DEMO_ID}'`),
     true
   );
   assert.equal((await ficharKiosco("demo-03", "8024")).ok, true);
