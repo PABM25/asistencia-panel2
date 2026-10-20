@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { getKioscoToken, setKioscoToken } from "@/lib/kiosco";
+import { clearKioscoToken, getKioscoToken, setKioscoToken } from "@/lib/kiosco";
 import { notifyError } from "@/lib/notify";
 
 export default function Kioscos() {
@@ -37,7 +37,8 @@ export default function Kioscos() {
   const [confirmarActivar, setConfirmarActivar] = useState(false);
   const [activando, setActivando] = useState(false);
   const [aRevocar, setARevocar] = useState(null);
-  const esteDispositivo = !!getKioscoToken();
+  // ninguno | activo | revocado (el token guardado ya no sirve)
+  const [esteDispositivo, setEsteDispositivo] = useState(getKioscoToken() ? "comprobando" : "ninguno");
 
   const load = async () => {
     setLoading(true);
@@ -61,6 +62,16 @@ export default function Kioscos() {
 
   useEffect(() => {
     load();
+    const token = getKioscoToken();
+    if (!token) return;
+    supabase.rpc("kiosco_empleados", { p_token: token }).then(({ error }) => {
+      if (error?.message?.includes("kiosco_no_autorizado")) {
+        clearKioscoToken();
+        setEsteDispositivo("revocado");
+      } else {
+        setEsteDispositivo("activo");
+      }
+    });
   }, []);
 
   const activar = async () => {
@@ -107,12 +118,12 @@ export default function Kioscos() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Activar este dispositivo */}
-        <div className="rounded-xl border bg-card p-5 shadow-sm">
+        <div className="rounded-xl border bg-card p-5 shadow-xs">
           <div className="mb-4 flex items-center gap-2">
             <TabletSmartphone className="h-5 w-5 text-primary" />
             <h2 className="text-base font-semibold">Este dispositivo</h2>
           </div>
-          {esteDispositivo ? (
+          {esteDispositivo === "activo" || esteDispositivo === "comprobando" ? (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
                 Este navegador ya está activado como kiosco.
@@ -125,6 +136,11 @@ export default function Kioscos() {
             </div>
           ) : (
             <div className="space-y-4">
+              {esteDispositivo === "revocado" && (
+                <p className="rounded-lg bg-amber-500/10 p-3 text-xs text-amber-700">
+                  Este dispositivo estaba activado, pero su kiosco fue revocado. Puedes activarlo de nuevo.
+                </p>
+              )}
               <p className="text-sm text-muted-foreground">
                 Abre esta página en la tablet o computador de la entrada y actívalo. Al hacerlo
                 se cerrará tu sesión en ese dispositivo y quedará mostrando la pantalla de fichaje.
@@ -146,7 +162,7 @@ export default function Kioscos() {
         </div>
 
         {/* Empleados sin PIN */}
-        <div className="rounded-xl border bg-card p-5 shadow-sm">
+        <div className="rounded-xl border bg-card p-5 shadow-xs">
           <div className="mb-4 flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" />
             <h2 className="text-base font-semibold">PIN de los empleados</h2>
@@ -171,7 +187,7 @@ export default function Kioscos() {
       </div>
 
       {/* Lista de kioscos */}
-      <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
         {loading ? (
           <div className="flex h-32 items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-primary" />

@@ -25,6 +25,20 @@ export default function ResetPassword() {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" || (session && event === "SIGNED_IN")) finish(true);
     });
+
+    // Enlace con token_hash (plantilla de email del README): funciona aunque
+    // se abra en otro navegador o dispositivo, a diferencia del enlace con
+    // ?code=, que solo sirve en el navegador donde se pidió el cambio.
+    const params = new URLSearchParams(window.location.search);
+    const tokenHash = params.get("token_hash");
+    if (tokenHash) {
+      window.history.replaceState(null, "", window.location.pathname);
+      supabase.auth
+        .verifyOtp({ token_hash: tokenHash, type: params.get("type") || "recovery" })
+        .then(({ error }) => finish(!error));
+      return () => sub.subscription.unsubscribe();
+    }
+
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) finish(true);
       // Da tiempo a que se canjee el código del enlace antes de rendirse.

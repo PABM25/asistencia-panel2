@@ -128,7 +128,7 @@ export default function Horarios() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {empleados.map((emp) => (
-            <div key={emp.id} className="rounded-xl border bg-card p-5 shadow-sm">
+            <div key={emp.id} className="rounded-xl border bg-card p-5 shadow-xs">
               <div className="mb-4">
                 <p className="font-semibold">{emp.nombre} {emp.apellidos}</p>
                 <p className="text-xs text-muted-foreground">{emp.departamento} · {emp.cargo}</p>

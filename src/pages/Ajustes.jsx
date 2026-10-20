@@ -35,6 +35,7 @@ export default function Ajustes() {
   const [nuevoFeriado, setNuevoFeriado] = useState({ fecha: "", nombre: "" });
   const [fechaAusencias, setFechaAusencias] = useState(ayerStr);
   const [marcando, setMarcando] = useState(false);
+  const [programando, setProgramando] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -133,6 +134,26 @@ export default function Ajustes() {
     else setFeriados((f) => f.filter((x) => x.fecha !== fecha));
   };
 
+  const programar = async () => {
+    setProgramando(true);
+    try {
+      const ok = await rpc("programar_tarea_ausencias");
+      if (ok) {
+        setProgramada(true);
+        notifySuccess("Tarea diaria programada");
+      } else {
+        notifyError(
+          new Error("Primero activa la extensión pg_cron en Supabase (Database → Extensions)."),
+          "pg_cron no está activado"
+        );
+      }
+    } catch (err) {
+      notifyError(err, "No se pudo programar la tarea");
+    } finally {
+      setProgramando(false);
+    }
+  };
+
   const marcarAhora = async () => {
     setMarcando(true);
     try {
@@ -160,7 +181,7 @@ export default function Ajustes() {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold tracking-tight">Ajustes</h1>
-        <div className="rounded-xl border bg-card p-6 text-sm shadow-sm">
+        <div className="rounded-xl border bg-card p-6 text-sm shadow-xs">
           Falta ejecutar la migración <code>20261021000000_reglas_asistencia.sql</code> en el SQL Editor de
           Supabase. Después recarga esta página.
         </div>
@@ -179,7 +200,7 @@ export default function Ajustes() {
       </div>
 
       {/* Reglas */}
-      <div className="rounded-xl border bg-card p-5 shadow-sm">
+      <div className="rounded-xl border bg-card p-5 shadow-xs">
         <div className="mb-4 flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" />
           <h2 className="text-base font-semibold">Jornada</h2>
@@ -253,7 +274,7 @@ export default function Ajustes() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Ausencias automáticas */}
-        <div className="rounded-xl border bg-card p-5 shadow-sm">
+        <div className="rounded-xl border bg-card p-5 shadow-xs">
           <div className="mb-4 flex items-center gap-2">
             <UserX className="h-5 w-5 text-primary" />
             <h2 className="text-base font-semibold">Ausencias automáticas</h2>
@@ -276,11 +297,15 @@ export default function Ajustes() {
             <p className="mt-2 text-xs text-amber-600">Pulsa «Guardar cambios» arriba para aplicarlo.</p>
           )}
           {programada === false && (
-            <p className="mt-3 rounded-lg bg-amber-500/10 p-3 text-xs text-amber-700">
-              La tarea diaria no está programada en Supabase. Activa la extensión <strong>pg_cron</strong>{" "}
-              (Database → Extensions) y vuelve a ejecutar la migración de reglas. Mientras tanto puedes marcarlas
-              a mano aquí abajo.
-            </p>
+            <div className="mt-3 space-y-2 rounded-lg bg-amber-500/10 p-3 text-xs text-amber-700">
+              <p>
+                La tarea diaria no está programada. Activa la extensión <strong>pg_cron</strong> en Supabase
+                (Database → Extensions) y pulsa «Programar». Mientras tanto puedes marcarlas a mano aquí abajo.
+              </p>
+              <Button size="sm" variant="outline" onClick={programar} disabled={programando}>
+                {programando ? "Programando..." : "Programar"}
+              </Button>
+            </div>
           )}
           {programada === true && (
             <p className="mt-3 text-xs text-emerald-600">✓ Tarea diaria programada (03:00–04:00, hora de Chile).</p>
@@ -308,7 +333,7 @@ export default function Ajustes() {
         </div>
 
         {/* Feriados */}
-        <div className="rounded-xl border bg-card p-5 shadow-sm">
+        <div className="rounded-xl border bg-card p-5 shadow-xs">
           <div className="mb-4 flex items-center gap-2">
             <CalendarOff className="h-5 w-5 text-primary" />
             <h2 className="text-base font-semibold">Feriados</h2>

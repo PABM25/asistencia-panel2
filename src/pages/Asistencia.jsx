@@ -32,10 +32,14 @@ import { ESTADOS_ASISTENCIA as estados, estadoBadge, todayStr, parseDateStr } fr
 import { notifyError, notifySuccess } from "@/lib/notify";
 import { mensajeFichaje } from "@/lib/kiosco";
 
+const POR_PAGINA = 100;
+
 export default function Asistencia() {
   const [empleados, setEmpleados] = useState([]);
   const [registros, setRegistros] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hayMas, setHayMas] = useState(false);
+  const [cargandoMas, setCargandoMas] = useState(false);
   const [filterFecha, setFilterFecha] = useState(todayStr());
   const [filterEstado, setFilterEstado] = useState("Todos");
   const [search, setSearch] = useState("");
@@ -56,22 +60,44 @@ export default function Asistencia() {
     }
   };
 
+  const consulta = () => {
+    const query = {};
+    if (filterFecha) query.fecha = filterFecha;
+    if (filterEstado !== "Todos") query.estado = filterEstado;
+    if (search.trim()) query.empleado_nombre = { $regex: search, $options: "i" };
+    return query;
+  };
+
   const loadRegistros = async () => {
     setLoading(true);
     try {
-      const query = {};
-      if (filterFecha) query.fecha = filterFecha;
-      if (filterEstado !== "Todos") query.estado = filterEstado;
-      if (search.trim()) query.empleado_nombre = { $regex: search, $options: "i" };
-      const res = await db.entities.RegistroAsistencia.filter(query, {
+      const res = await db.entities.RegistroAsistencia.filter(consulta(), {
         sort: "-created_date",
-        limit: 100,
+        limit: POR_PAGINA,
       });
       setRegistros(res.items || []);
+      setHayMas(res.items.length === POR_PAGINA);
     } catch (err) {
       notifyError(err, "No se pudieron cargar los registros");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const cargarMas = async () => {
+    setCargandoMas(true);
+    try {
+      const res = await db.entities.RegistroAsistencia.filter(consulta(), {
+        sort: "-created_date",
+        limit: POR_PAGINA,
+        skip: registros.length,
+      });
+      setRegistros((prev) => [...prev, ...res.items]);
+      setHayMas(res.items.length === POR_PAGINA);
+    } catch (err) {
+      notifyError(err, "No se pudieron cargar más registros");
+    } finally {
+      setCargandoMas(false);
     }
   };
 
@@ -128,7 +154,7 @@ export default function Asistencia() {
       </div>
 
       {/* Fichar */}
-      <div className="rounded-xl border bg-card p-5 shadow-sm">
+      <div className="rounded-xl border bg-card p-5 shadow-xs">
         <div className="flex items-center gap-2 mb-4">
           <Clock className="h-5 w-5 text-primary" />
           <h2 className="text-base font-semibold">Fichaje rápido</h2>
@@ -188,7 +214,7 @@ export default function Asistencia() {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+      <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
         {loading ? (
           <div className="flex h-40 items-center justify-center">
             <div className="h-8 w-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
@@ -228,7 +254,7 @@ export default function Asistencia() {
                       {r.registrado_por}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => setEditReg(r)}>
+                      <Button variant="ghost" size="icon" onClick={() => setEditReg(r)} aria-label={`Editar registro de ${r.empleado_nombre}`}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -236,6 +262,13 @@ export default function Asistencia() {
                 ))}
               </TableBody>
             </Table>
+            {hayMas && (
+              <div className="flex justify-center border-t p-3">
+                <Button variant="outline" size="sm" onClick={cargarMas} disabled={cargandoMas}>
+                  {cargandoMas ? "Cargando..." : `Cargar ${POR_PAGINA} más`}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -282,10 +315,6 @@ function RegistroDialog({ registro, empleados, onClose, onSave }) {
       notifyError(new Error("Indica la fecha del registro."), "Faltan datos");
       return;
     }
-    if (form.hora_entrada && form.hora_salida && form.hora_salida < form.hora_entrada) {
-      notifyError(new Error("La hora de salida es anterior a la de entrada."), "Datos no válidos");
-      return;
-    }
     setSaving(true);
     try {
       await onSave(form);
@@ -328,6 +357,11 @@ function RegistroDialog({ registro, empleados, onClose, onSave }) {
               <Input type="time" value={form.hora_salida} onChange={(e) => set("hora_salida", e.target.value)} />
             </div>
           </div>
+          {form.hora_entrada && form.hora_salida && form.hora_salida < form.hora_entrada && (
+            <p className="-mt-2 text-xs text-muted-foreground">
+              La salida es anterior a la entrada: se toma como turno de noche (sale al día siguiente).
+            </p>
+          )}
           <div className="grid gap-2">
             <Label>Estado</Label>
             <Select value={form.estado} onValueChange={(v) => set("estado", v)}>

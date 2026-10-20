@@ -2,7 +2,9 @@
 -- 2) Evita que dos registros simultáneos en una base vacía queden ambos como admin.
 --
 -- Ejecútalo DESPUÉS de 20261019000000_esquema_inicial.sql (`supabase db push`
--- o pegándolo en el SQL Editor). Se puede ejecutar más de una vez.
+-- o pegándolo en el SQL Editor).
+-- AVISO: ejecútala una sola vez, en orden. Volver a ejecutarla después de
+-- migraciones posteriores reemplazaría funciones por versiones antiguas.
 
 -- ---------------------------------------------------------------------------
 -- 1) Fusionar duplicados existentes y añadir la restricción única.

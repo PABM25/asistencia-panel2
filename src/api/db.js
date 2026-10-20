@@ -222,6 +222,18 @@ function makeEntity(schema) {
       return data || [];
     },
 
+    // Inserta varias filas y omite las que ya existen según la restricción
+    // única indicada (p. ej. 'empleado_id,fecha,hora_inicio'). Devuelve solo
+    // las filas creadas.
+    async bulkCreateIgnoringDuplicates(rows, onConflict) {
+      if (!rows?.length) return [];
+      const { data, error } = await table()
+        .upsert(rows.map((r) => clean(schema, r)), { onConflict, ignoreDuplicates: true })
+        .select();
+      raise(error);
+      return data || [];
+    },
+
     async update(id, data) {
       const { data: row, error } = await table()
         .update(clean(schema, data))

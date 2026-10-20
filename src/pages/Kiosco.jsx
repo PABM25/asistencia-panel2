@@ -148,7 +148,7 @@ export default function Kiosco() {
   if (estado === "sin_token") {
     return (
       <Pantalla>
-        <div className="mx-auto max-w-md rounded-2xl border bg-card p-8 text-center shadow-sm">
+        <div className="mx-auto max-w-md rounded-2xl border bg-card p-8 text-center shadow-xs">
           <TabletSmartphone className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
           <h1 className="text-xl font-semibold">Este dispositivo no está activado como kiosco</h1>
           <p className="mt-3 text-sm text-muted-foreground">
@@ -179,7 +179,7 @@ export default function Kiosco() {
   if (estado === "error") {
     return (
       <Pantalla>
-        <div className="mx-auto max-w-md rounded-2xl border bg-card p-8 text-center shadow-sm">
+        <div className="mx-auto max-w-md rounded-2xl border bg-card p-8 text-center shadow-xs">
           <XCircle className="mx-auto mb-4 h-12 w-12 text-rose-500" />
           <h1 className="text-xl font-semibold">Sin conexión</h1>
           <p className="mt-3 text-sm text-muted-foreground">No se pudo cargar la lista de empleados.</p>
@@ -199,7 +199,7 @@ export default function Kiosco() {
       {resultado ? (
         <div
           className={cn(
-            "mx-auto flex max-w-xl flex-col items-center rounded-3xl border p-10 text-center shadow-sm",
+            "mx-auto flex max-w-xl flex-col items-center rounded-3xl border p-10 text-center shadow-xs",
             resultado.ok ? "border-emerald-500/30 bg-emerald-500/10" : "border-rose-500/30 bg-rose-500/10"
           )}
           onClick={reiniciar}
@@ -220,7 +220,7 @@ export default function Kiosco() {
           >
             <ArrowLeft className="h-4 w-4" /> No soy yo
           </button>
-          <div className="rounded-3xl border bg-card p-6 shadow-sm">
+          <div className="rounded-3xl border bg-card p-6 shadow-xs">
             <p className="text-center text-sm text-muted-foreground">Hola,</p>
             <h2 className="text-center text-2xl font-semibold">{seleccionado.nombre}</h2>
             <p className="mt-4 text-center text-sm text-muted-foreground">Escribe tu PIN</p>
@@ -275,7 +275,7 @@ export default function Kiosco() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Busca tu nombre..."
-              className="h-14 w-full rounded-2xl border bg-card pl-12 pr-4 text-lg shadow-sm outline-none focus:ring-2 focus:ring-primary"
+              className="h-14 w-full rounded-2xl border bg-card pl-12 pr-4 text-lg shadow-xs outline-hidden focus:ring-2 focus:ring-primary"
             />
           </div>
           {filtrados.length === 0 ? (
@@ -287,7 +287,7 @@ export default function Kiosco() {
                   key={e.id}
                   disabled={!e.tiene_pin}
                   onClick={() => setSeleccionado(e)}
-                  className="flex min-h-16 flex-col items-start justify-center rounded-2xl border bg-card px-5 py-3 text-left shadow-sm transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-16 flex-col items-start justify-center rounded-2xl border bg-card px-5 py-3 text-left shadow-xs transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="text-lg font-medium">{e.nombre}</span>
                   <span className="text-xs text-muted-foreground">
@@ -332,7 +332,7 @@ function Tecla({ className, ...props }) {
     <button
       type="button"
       className={cn(
-        "flex h-16 items-center justify-center rounded-2xl border bg-background text-2xl font-medium shadow-sm active:bg-accent",
+        "flex h-16 items-center justify-center rounded-2xl border bg-background text-2xl font-medium shadow-xs active:bg-accent",
         className
       )}
       {...props}

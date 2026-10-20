@@ -2,7 +2,7 @@
 -- y turnos de esta semana y la próxima.
 --
 -- Cómo usarlo: pégalo en Supabase → SQL Editor y pulsa Run. Requiere haber
--- ejecutado antes las tres migraciones de supabase/migrations.
+-- ejecutado antes todas las migraciones de supabase/migrations.
 --
 -- Todos los datos de prueba usan ids que empiezan por "demo-". Ejecutarlo de
 -- nuevo borra los datos de prueba anteriores y los vuelve a crear (con las

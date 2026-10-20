@@ -38,6 +38,7 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
   // PIN del kiosco: se guarda aparte, cifrado, y nunca se vuelve a mostrar.
   const [pin, setPin] = useState("");
   const [quitarPin, setQuitarPin] = useState(false);
+  const [desbloquear, setDesbloquear] = useState(false);
 
   useEffect(() => {
     if (empleado) {
@@ -69,6 +70,7 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
     }
     setPin("");
     setQuitarPin(false);
+    setDesbloquear(false);
   }, [empleado, open]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -95,6 +97,12 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
         } catch (err) {
           // El empleado ya quedó guardado; solo falló el PIN.
           notifyError(err, "Empleado guardado, pero no se pudo cambiar el PIN");
+        }
+      } else if (desbloquear) {
+        try {
+          await rpc("empleado_desbloquear_pin", { p_empleado_id: guardado.id });
+        } catch (err) {
+          notifyError(err, "Empleado guardado, pero no se pudo desbloquear el PIN");
         }
       }
       onSaved();
@@ -204,6 +212,16 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
                   onChange={(e) => { setQuitarPin(e.target.checked); setPin(""); }}
                 />
                 Quitar el PIN
+              </label>
+            )}
+            {empleado?.tiene_pin && !quitarPin && !pin && (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={desbloquear}
+                  onChange={(e) => setDesbloquear(e.target.checked)}
+                />
+                Desbloquear el PIN (tras 5 intentos fallidos), sin cambiarlo
               </label>
             )}
           </div>

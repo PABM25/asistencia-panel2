@@ -9,7 +9,8 @@
 --   panel (recibe un token secreto que se puede revocar).
 --
 -- Ejecútalo DESPUÉS de 20261019000001_registro_unico_y_admin.sql.
--- Se puede ejecutar más de una vez.
+-- AVISO: ejecútala una sola vez, en orden. Volver a ejecutarla después de
+-- migraciones posteriores reemplazaría funciones por versiones antiguas.
 
 -- ---------------------------------------------------------------------------
 -- Zona horaria de la empresa (cámbiala aquí si hace falta).

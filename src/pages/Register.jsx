@@ -11,7 +11,7 @@ import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { authErrorMessage } from "@/lib/authErrors";
-import { useGoogleAuthEnabled } from "@/lib/useGoogleAuthEnabled";
+import { useAuthSettings } from "@/lib/useAuthSettings";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -21,7 +21,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [otpCode, setOtpCode] = useState("");
-  const googleEnabled = useGoogleAuthEnabled();
+  const authSettings = useAuthSettings();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -141,6 +141,25 @@ export default function Register() {
     );
   }
 
+  if (authSettings.loaded && !authSettings.signup) {
+    return (
+      <AuthLayout
+        icon={UserPlus}
+        title="Registro desactivado"
+        subtitle="No se pueden crear cuentas nuevas"
+        footer={
+          <Link to="/login" className="text-primary font-medium hover:underline">
+            Volver a iniciar sesión
+          </Link>
+        }
+      >
+        <p className="text-sm text-foreground text-center">
+          Si necesitas acceso al panel, pide a un administrador que te cree una cuenta.
+        </p>
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout
       icon={UserPlus}
@@ -158,7 +177,7 @@ export default function Register() {
         </>
       }
     >
-      {googleEnabled && (
+      {authSettings.google && (
         <>
           <Button
             variant="outline"

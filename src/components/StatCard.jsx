@@ -10,7 +10,7 @@ export default function StatCard({ label, value, icon: Icon, tone = "default", h
   };
 
   return (
-    <div className="rounded-xl border bg-card p-5 shadow-sm">
+    <div className="rounded-xl border bg-card p-5 shadow-xs">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{label}</p>

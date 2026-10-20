@@ -67,8 +67,12 @@ export default function BulkTurnosDialog({ open, onClose, onSaved, empleados, de
         tipo,
         minutos_descanso: minutosDescanso,
       }));
-      await db.entities.Turno.bulkCreate(records);
-      setResult({ count: records.length });
+      // Quien ya tiene un turno que empieza a esa hora ese día se omite.
+      const creados = await db.entities.Turno.bulkCreateIgnoringDuplicates(
+        records,
+        "empleado_id,fecha,hora_inicio"
+      );
+      setResult({ count: creados.length, omitidos: records.length - creados.length });
       onSaved();
     } catch (err) {
       notifyError(err, "No se pudieron asignar los turnos");
@@ -142,6 +146,11 @@ export default function BulkTurnosDialog({ open, onClose, onSaved, empleados, de
           {result && (
             <p className="text-sm text-emerald-600 font-medium">
               ✓ {result.count} turno(s) asignado(s) correctamente.
+              {result.omitidos > 0 && (
+                <span className="block text-xs font-normal text-muted-foreground">
+                  {result.omitidos} empleado(s) ya tenían ese turno y se omitieron.
+                </span>
+              )}
             </p>
           )}
           <DialogFooter>

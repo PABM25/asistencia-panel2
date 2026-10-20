@@ -1,5 +1,8 @@
-// Envía un email a todos los administradores cuando se registra un retraso o
-// una ausencia. La invoca el trigger `aviso_incidencia` de la base de datos.
+// Envía un email a todos los administradores:
+//   * por cada retraso o ausencia registrada a mano o en el kiosco (trigger
+//     `aviso_incidencia`), o
+//   * con el resumen diario de ausencias automáticas (cuerpo con
+//     tipo = "resumen_ausencias", lo envía _enviar_resumen_ausencias).
 //
 // Secretos necesarios (supabase secrets set ...):
 //   NOTIFY_SECRET   valor compartido con el trigger (cabecera x-notify-secret)
@@ -37,6 +40,24 @@ ${boton}
 </table></body></html>`;
 }
 
+function renderResumen(fecha: string, empleados: string[], appUrl: string) {
+  const items = empleados.map((e) => `<li style="padding:2px 0">${escapeHtml(e)}</li>`).join("");
+  const boton = appUrl
+    ? `<tr><td style="padding:0 36px 40px"><a href="${escapeHtml(appUrl)}/asistencia" style="display:inline-block;background:#000;color:#fff;text-decoration:none;font-weight:700;padding:14px 28px;border-radius:4px">Ver asistencia</a></td></tr>`
+    : "";
+  return `<!doctype html><html><body style="margin:0;background:#f6f7f9;font-family:Arial,Helvetica,sans-serif;color:#000">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#fff">
+<tr><td style="background:#111;padding:20px 36px;color:#fff;font-size:18px;font-weight:700">Asistenta Pro</td></tr>
+<tr><td style="padding:40px 36px 8px">
+  <div style="font-size:26px;font-weight:700;line-height:1.2">${empleados.length} ausencia(s) el ${escapeHtml(fecha)}</div>
+  <div style="color:#6b7280;padding-top:8px;font-size:15px">Debían trabajar y no registraron ningún fichaje. Se marcaron como ausentes automáticamente.</div>
+</td></tr>
+<tr><td style="padding:24px 36px"><ul style="margin:0;padding-left:20px;font-size:15px;line-height:1.6">${items}</ul></td></tr>
+${boton}
+<tr><td style="background:#f6f7f9;padding:20px 36px;color:#6b7280;font-size:12px">Resumen automático de Asistenta Pro.</td></tr>
+</table></body></html>`;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return Response.json({ error: "Method not allowed" }, { status: 405 });
@@ -53,8 +74,8 @@ Deno.serve(async (req) => {
     return Response.json({ error: "Faltan RESEND_API_KEY o EMAIL_FROM" }, { status: 500 });
   }
 
-  const { empleado, fecha, estado, hora_entrada, notas } = await req.json();
-  const tipo = estado === "retraso" ? "Retraso" : "Ausencia injustificada";
+  const body = await req.json();
+  const appUrl = (Deno.env.get("APP_URL") || "").replace(/\/$/, "");
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -67,15 +88,26 @@ Deno.serve(async (req) => {
     .not("email", "is", null);
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  const vars = {
-    tipo,
-    empleado: empleado || "Empleado",
-    fecha: fecha || "-",
-    hora_entrada: hora_entrada || "-",
-    notas: notas || "-",
-  };
-  const html = renderEmail(vars, (Deno.env.get("APP_URL") || "").replace(/\/$/, ""));
-  const subject = `${tipo}: ${vars.empleado} (${vars.fecha})`;
+  let subject: string;
+  let html: string;
+  if (body.tipo === "resumen_ausencias") {
+    const empleados: string[] = Array.isArray(body.empleados) ? body.empleados.map(String) : [];
+    if (!empleados.length) return Response.json({ enviados: 0, fallos: [] });
+    subject = `Ausencias del ${body.fecha}: ${empleados.length}`;
+    html = renderResumen(String(body.fecha || "-"), empleados, appUrl);
+  } else {
+    const { empleado, fecha, estado, hora_entrada, notas } = body;
+    const tipo = estado === "retraso" ? "Retraso" : "Ausencia injustificada";
+    const vars = {
+      tipo,
+      empleado: empleado || "Empleado",
+      fecha: fecha || "-",
+      hora_entrada: hora_entrada || "-",
+      notas: notas || "-",
+    };
+    html = renderEmail(vars, appUrl);
+    subject = `${tipo}: ${vars.empleado} (${vars.fecha})`;
+  }
 
   let enviados = 0;
   const fallos: string[] = [];

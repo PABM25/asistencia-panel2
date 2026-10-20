@@ -102,6 +102,10 @@ export default function TurnoForm({ open, onClose, onSaved, turno, empleados, de
       onSaved();
       onClose();
     } catch (err) {
+      if (err.details?.code === "23505") {
+        notifyError(new Error("Ese empleado ya tiene un turno que empieza a esa hora ese día."), "Turno repetido");
+        return;
+      }
       notifyError(err, "No se pudo guardar el turno");
     } finally {
       setSaving(false);

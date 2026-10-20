@@ -9,14 +9,14 @@ import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { safeReturnTo } from "@/lib/authReturnTo";
 import { authErrorMessage } from "@/lib/authErrors";
-import { useGoogleAuthEnabled } from "@/lib/useGoogleAuthEnabled";
+import { useAuthSettings } from "@/lib/useAuthSettings";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const googleEnabled = useGoogleAuthEnabled();
+  const authSettings = useAuthSettings();
   // Ruta a la que volver tras iniciar sesión (solo rutas del mismo sitio).
   const returnTo = safeReturnTo();
 
@@ -49,6 +49,7 @@ export default function Login() {
       title="Bienvenido/a"
       subtitle="Inicia sesión en tu cuenta"
       footer={
+        authSettings.signup && (
         <>
           ¿No tienes cuenta?{" "}
           <Link
@@ -58,9 +59,10 @@ export default function Login() {
             Crear cuenta
           </Link>
         </>
+        )
       }
     >
-      {googleEnabled && (
+      {authSettings.google && (
         <>
           <Button
             variant="outline"

@@ -12,10 +12,13 @@ src/
   api/supabaseClient.js   cliente de Supabase (lee las variables VITE_*)
   api/db.js               capa de datos: db.entities.Empleado.filter(...), create, update...
   lib/AuthContext.jsx     sesión y rol del usuario
-  pages/                  Dashboard, Empleados, Asistencia, Turnos, Horarios, Informes, login...
+  pages/                  Dashboard, Empleados, Asistencia, Turnos, Horarios, Informes,
+                          Kiosco, Ajustes, login...
 supabase/
-  migrations/             tablas, seguridad (RLS) y trigger de avisos
+  migrations/             tablas, seguridad (RLS), kiosco, reglas de asistencia
   functions/notificar-incidencia/   envío de emails con Resend
+  datos_demo.sql          datos de prueba (y datos_demo_borrar.sql)
+tests/                    pruebas (npm test)
 ```
 
 ## 1. Crear el proyecto en Supabase
@@ -30,8 +33,15 @@ supabase/
    3. `supabase/migrations/20261020000000_kiosco.sql` (modo kiosco con PIN).
    4. `supabase/migrations/20261021000000_reglas_asistencia.sql` (tolerancia,
       turnos de noche, ausencias automáticas, feriados y página Ajustes).
+   5. `supabase/migrations/20261022000000_correcciones.sql` (turnos sin
+      duplicados, resumen del Dashboard, resumen diario de ausencias por email,
+      datos del empleado siempre al día).
 
    O con la CLI: `supabase link --project-ref <ref>` y `supabase db push`.
+
+   **Ejecuta cada migración una sola vez y en orden.** Volver a ejecutar una
+   antigua después de las siguientes reemplazaría funciones por versiones
+   anteriores.
 
 ## 2. Ejecutar la app en local
 
@@ -56,6 +66,11 @@ la clave `anon public`). Abre <http://localhost:5173>.
 
 - Las reglas de seguridad (RLS) hacen que solo los administradores puedan leer
   o modificar empleados, registros y turnos, aunque alguien tenga la clave anon.
+- **Cierra el registro cuando ya existan los administradores:** en Supabase,
+  *Authentication → Sign In / Providers*, desactiva *Allow new users to sign
+  up*. La app oculta entonces "Crear cuenta". Para dar acceso a alguien nuevo,
+  créalo en *Authentication → Users → Add user* (marca *Auto Confirm User*) y
+  hazlo admin con el `update` de arriba.
 
 ### Configuración de Auth en Supabase (Authentication)
 
@@ -65,11 +80,17 @@ la clave `anon public`). Abre <http://localhost:5173>.
   que llega por email. En *Email Templates → Confirm signup* incluye
   `{{ .Token }}` en el mensaje (puedes dejar también el enlace). Si
   desactivas *Confirm email*, el registro entra directo sin código.
-- **Recuperar contraseña:** funciona sin cambios; el enlace del email lleva a
-  `/reset-password`.
+- **Recuperar contraseña:** en *Email Templates → Reset Password* cambia el
+  enlace por este, para que funcione aunque se abra en otro navegador o en el
+  teléfono:
+
+  ```html
+  <a href="{{ .SiteURL }}/reset-password?token_hash={{ .TokenHash }}&type=recovery">Cambiar contraseña</a>
+  ```
+
+  Con el enlace por defecto solo funciona en el mismo navegador donde se pidió.
 - **Google:** en *Providers → Google* activa el proveedor con tu Client ID y
-  Secret de Google Cloud. Si no lo configuras, el botón de Google mostrará un
-  error y el login con email sigue funcionando.
+  Secret de Google Cloud. Si no está activado, la app oculta el botón.
 - Para producción conviene configurar un SMTP propio en *Auth → SMTP*; el de
   Supabase tiene un límite bajo de emails por hora.
 
@@ -93,8 +114,8 @@ Detalles:
 
 - La hora la pone el servidor en la zona horaria `America/Santiago` (función
   `zona_horaria()` en la migración), no el reloj del dispositivo.
-- Tras 5 PIN incorrectos, el empleado queda bloqueado 5 minutos. Asignarle un
-  PIN nuevo lo desbloquea.
+- Tras 5 PIN incorrectos, el empleado queda bloqueado 5 minutos. Un admin puede
+  desbloquearlo antes en *Empleados → editar → Desbloquear el PIN*.
 - No se puede marcar dos veces la entrada o la salida del mismo día; para
   corregir una hora, edita el registro en *Asistencia*.
 - Los registros del kiosco aparecen con origen `empleado`; los del fichaje
@@ -120,17 +141,26 @@ Detalles:
   día laboral y no feriado. Los feriados se cargan en *Ajustes*.
 
   Para que corra sola hace falta **pg_cron**: en Supabase ve a *Database →
-  Extensions*, activa `pg_cron` y vuelve a ejecutar
-  `20261021000000_reglas_asistencia.sql`. *Ajustes* indica si la tarea quedó
-  programada; también permite marcar a mano las ausencias de un día.
-  Cada ausencia marcada envía el email de aviso, si los avisos están configurados.
+  Extensions*, activa `pg_cron` y luego pulsa *Programar* en *Ajustes*. Ahí
+  también puedes marcar a mano las ausencias de un día.
+  Las ausencias automáticas se avisan en **un solo email resumen** por día.
+- **Dashboard:** "Trabajan hoy" y "Ausentes / sin fichar" usan esta misma
+  regla; "sin fichar" solo cuenta a quien ya pasó su hora de entrada (más la
+  tolerancia).
+- **Turnos:** un empleado no puede tener dos turnos que empiecen a la misma
+  hora el mismo día; la asignación por departamento omite a quien ya lo tiene.
 
 ## 4. Avisos por email de retrasos y ausencias
 
 Cuando un registro se crea como `retraso`/`ausente` (o cambia a uno de esos
 estados), un trigger de la base de datos llama a la función
 `notificar-incidencia`, que envía un email a todos los administradores
-usando [Resend](https://resend.com).
+usando [Resend](https://resend.com). Las ausencias automáticas no generan un
+email cada una: se envía un resumen diario con todas.
+
+Si ya habías desplegado la función antes de la migración `20261022000000`,
+vuelve a desplegarla (`supabase functions deploy notificar-incidencia
+--no-verify-jwt`) para que entienda el resumen diario.
 
 1. Crea una cuenta en Resend, verifica tu dominio y genera una API key.
 2. Despliega la función y sus secretos (CLI de Supabase):
@@ -155,6 +185,17 @@ usando [Resend](https://resend.com).
 
 Mientras estos dos secretos no existan, la app funciona igual y simplemente no
 envía avisos. Los intentos de envío quedan en la tabla `net._http_response`.
+
+## Pruebas
+
+```bash
+npm test
+```
+
+Prueba las migraciones sobre un Postgres en memoria (PGlite) con Supabase
+simulado: permisos por rol, kiosco y PIN, reglas de asistencia, ausencias,
+avisos por email y datos de prueba; y el cálculo de horas. Ejecútalas después
+de cambiar una migración o `src/lib/horas.js`.
 
 ## 5. Publicar
 

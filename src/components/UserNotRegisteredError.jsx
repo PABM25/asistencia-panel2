@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 const UserNotRegisteredError = () => {
   const { user, logout } = useAuth();
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-white to-slate-50">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-b from-white to-slate-50">
       <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-lg border border-slate-100">
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-orange-100">

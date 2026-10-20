@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { db } from "@/api/db";
+import { db, rpc } from "@/api/db";
 import StatCard from "@/components/StatCard";
 import { Users, UserCheck, UserX, Clock } from "lucide-react";
 import {
@@ -18,7 +18,7 @@ import { notifyError } from "@/lib/notify";
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ total: 0, presentes: 0, retrasos: 0, ausentes: 0, sinFichar: 0 });
+  const [stats, setStats] = useState({ total: 0, esperados: 0, presentes: 0, retrasos: 0, ausentes: 0, sinFichar: 0, pendientes: 0 });
   const [chartData, setChartData] = useState([]);
   const [recientes, setRecientes] = useState([]);
 
@@ -27,22 +27,22 @@ export default function Dashboard() {
       try {
         const today = todayStr();
 
-        const [empRes, regRes] = await Promise.all([
-          db.entities.Empleado.filterAll({ estado: "activo" }),
+        // El resumen lo calcula el servidor con las mismas reglas que las
+        // ausencias automáticas (turnos, días laborales, feriados, tolerancia).
+        const [resumen, regRes] = await Promise.all([
+          rpc("resumen_hoy"),
           db.entities.RegistroAsistencia.filterAll({ fecha: today }),
         ]);
-        const activos = empRes.items;
         const registrosHoy = regRes.items;
-        const conRegistro = new Set(registrosHoy.map((r) => r.empleado_id));
-        const porEstado = (estado) => registrosHoy.filter((r) => r.estado === estado).length;
 
         setStats({
-          total: activos.length,
-          presentes: porEstado("presente"),
-          retrasos: porEstado("retraso"),
-          ausentes: porEstado("ausente"),
-          // Empleados activos sin ningún registro hoy (ni fichaje, ni vacaciones, ni permiso).
-          sinFichar: activos.filter((e) => !conRegistro.has(e.id)).length,
+          total: resumen.activos,
+          esperados: resumen.esperados,
+          presentes: resumen.presentes,
+          retrasos: resumen.retrasos,
+          ausentes: resumen.ausentes,
+          sinFichar: resumen.sin_fichar,
+          pendientes: resumen.pendientes,
         });
 
         // Últimos 7 días, con fechas locales.
@@ -96,7 +96,13 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Empleados activos" value={stats.total} icon={Users} tone="blue" />
+        <StatCard
+          label="Trabajan hoy"
+          value={stats.esperados}
+          icon={Users}
+          tone="blue"
+          hint={`${stats.total} empleado(s) activo(s)`}
+        />
         <StatCard label="Presentes hoy" value={stats.presentes} icon={UserCheck} tone="green" />
         <StatCard label="Retrasos hoy" value={stats.retrasos} icon={Clock} tone="amber" />
         <StatCard
@@ -104,12 +110,14 @@ export default function Dashboard() {
           value={stats.ausentes + stats.sinFichar}
           icon={UserX}
           tone="red"
-          hint={`${stats.ausentes} ausente(s) registrados · ${stats.sinFichar} sin fichar`}
+          hint={`${stats.ausentes} ausente(s) · ${stats.sinFichar} sin fichar${
+            stats.pendientes ? ` · ${stats.pendientes} aún no empiezan` : ""
+          }`}
         />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-xl border bg-card p-6 shadow-sm">
+        <div className="lg:col-span-2 rounded-xl border bg-card p-6 shadow-xs">
           <h2 className="text-base font-semibold mb-4">Asistencia últimos 7 días</h2>
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={chartData} margin={{ left: -20, right: 10, top: 5 }}>
@@ -135,7 +143,7 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
+        <div className="rounded-xl border bg-card p-6 shadow-xs">
           <h2 className="text-base font-semibold mb-4">Actividad reciente</h2>
           {recientes.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">Sin registros hoy</p>

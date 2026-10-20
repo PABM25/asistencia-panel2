@@ -42,10 +42,11 @@ export default function WeeklyCalendar({ turnos, empleados, weekStart, onWeekCha
 
   const weekLabel = `${format(weekStart, "d MMM", { locale: es })} – ${format(addDays(weekStart, 6), "d MMM yyyy", { locale: es })}`;
 
-  // Carga total por día (para cabecera)
+  // Carga por día (cabecera): solo turnos de los empleados que se muestran.
+  const idsVisibles = new Set(empleadosVisibles.map((e) => e.id));
   const cargaPorDia = days.map((d) => {
     const dStr = format(d, "yyyy-MM-dd");
-    return turnos.filter((t) => t.fecha === dStr).length;
+    return turnos.filter((t) => t.fecha === dStr && idsVisibles.has(t.empleado_id)).length;
   });
 
   return (
@@ -76,7 +77,7 @@ export default function WeeklyCalendar({ turnos, empleados, weekStart, onWeekCha
         </div>
       </div>
 
-      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+      <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse min-w-[900px]">
             <thead>

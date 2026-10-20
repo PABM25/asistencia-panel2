@@ -63,6 +63,7 @@ export default function Informes() {
         turnosPorDia.set(k, [...(turnosPorDia.get(k) || []), t]);
       }
       const regs = regRes.items || [];
+      const hoy = todayStr();
 
       const byEmp = {};
       regs.forEach((r) => {
@@ -88,7 +89,8 @@ export default function Informes() {
         if (h) {
           row.minutos += h.trabajado;
           row.extra += h.extra;
-        } else if (r.hora_entrada && !r.hora_salida) {
+        } else if (r.hora_entrada && !r.hora_salida && r.fecha !== hoy) {
+          // Hoy todavía puede estar trabajando: solo cuentan días pasados.
           row.sinSalida++;
         }
       });
@@ -111,7 +113,12 @@ export default function Informes() {
     const header = ["Empleado", "Presente", "Retraso", "Ausente", "Vacaciones", "Permiso", "Total días", "Horas trabajadas", "Horas extra", "Días sin salida"];
     const lines = rows.map((r) =>
       [r.nombre, r.presente, r.retraso, r.ausente, r.vacaciones, r.permiso, r.total, formatoHoras(r.minutos), formatoHoras(r.extra), r.sinSalida]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .map((v) => {
+          // Un texto que empieza por = + - @ se abriría como fórmula en Excel.
+          const texto = String(v ?? "");
+          const seguro = typeof v === "string" && /^[=+\-@\t\r]/.test(texto) ? `'${texto}` : texto;
+          return `"${seguro.replace(/"/g, '""')}"`;
+        })
         .join(",")
     );
     const csv = [header.join(","), ...lines].join("\n");
@@ -182,14 +189,14 @@ export default function Informes() {
           { label: "Horas trabajadas", value: formatoHoras(totales.minutos), color: "" },
           { label: "Horas extra", value: formatoHoras(totales.extra), color: "text-orange-600" },
         ].map((t) => (
-          <div key={t.label} className="rounded-xl border bg-card p-4 shadow-sm">
+          <div key={t.label} className="rounded-xl border bg-card p-4 shadow-xs">
             <p className="text-xs text-muted-foreground">{t.label}</p>
             <p className={`text-2xl font-semibold ${t.color}`}>{t.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+      <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
         {loading ? (
           <div className="flex h-40 items-center justify-center">
             <div className="h-8 w-8 border-4 border-muted border-t-primary rounded-full animate-spin" />

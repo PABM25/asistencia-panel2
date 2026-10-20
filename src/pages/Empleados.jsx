@@ -70,6 +70,19 @@ export default function Empleados() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, depto]);
 
+  // Alternativa recomendada a borrar: conserva todo y lo saca del kiosco,
+  // de los turnos y de las ausencias automáticas.
+  const desactivar = async () => {
+    try {
+      await db.entities.Empleado.update(toDelete.id, { estado: "inactivo" });
+      load();
+    } catch (err) {
+      notifyError(err, "No se pudo desactivar el empleado");
+    } finally {
+      setToDelete(null);
+    }
+  };
+
   const confirmDelete = async () => {
     try {
       await db.entities.Empleado.delete(toDelete.id);
@@ -115,7 +128,7 @@ export default function Empleados() {
         </Select>
       </div>
 
-      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+      <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
         {loading ? (
           <div className="flex h-40 items-center justify-center">
             <div className="h-8 w-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
@@ -174,6 +187,7 @@ export default function Empleados() {
                           variant="ghost"
                           size="icon"
                           onClick={() => { setEditing(e); setFormOpen(true); }}
+                          aria-label={`Editar a ${fullName(e)}`}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -181,6 +195,7 @@ export default function Empleados() {
                           variant="ghost"
                           size="icon"
                           onClick={() => setToDelete(e)}
+                          aria-label={`Eliminar a ${fullName(e)}`}
                         >
                           <Trash2 className="h-4 w-4 text-rose-500" />
                         </Button>
@@ -206,12 +221,23 @@ export default function Empleados() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar empleado?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará permanentemente a{" "}
-              {toDelete && fullName(toDelete)}.
+              Se eliminará permanentemente a {toDelete && fullName(toDelete)} y sus turnos futuros. Sus
+              registros de asistencia pasados se conservan. Esta acción no se puede deshacer.
+              {toDelete?.estado === "activo" && (
+                <span className="mt-2 block">
+                  Si ya no trabaja aquí, es mejor <strong>desactivarlo</strong>: conserva su ficha y su historial,
+                  y deja de aparecer en el kiosco y en las ausencias automáticas.
+                </span>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            {toDelete?.estado === "activo" && (
+              <AlertDialogAction onClick={desactivar} className="bg-primary">
+                Desactivar
+              </AlertDialogAction>
+            )}
             <AlertDialogAction onClick={confirmDelete} className="bg-rose-500 hover:bg-rose-600">
               Eliminar
             </AlertDialogAction>

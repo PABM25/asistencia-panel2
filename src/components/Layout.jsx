@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -41,7 +41,7 @@ function NavLinks({ onNavigate }) {
             cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
               isActive
-                ? "bg-primary text-primary-foreground shadow-sm"
+                ? "bg-primary text-primary-foreground shadow-xs"
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             )
           }
@@ -76,6 +76,14 @@ function UserFooter() {
 
 export default function Layout() {
   const [open, setOpen] = useState(false);
+
+  // El menú móvil se cierra con Escape.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
   const location = useLocation();
 
   return (
@@ -101,7 +109,7 @@ export default function Layout() {
       {open && (
         <div className="lg:hidden fixed inset-0 z-50">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 w-72 bg-background shadow-xl flex flex-col">
+          <aside className="absolute inset-y-0 left-0 w-72 bg-background shadow-xl flex flex-col" role="dialog" aria-modal="true" aria-label="Menú">
             <div className="flex h-16 items-center justify-between border-b px-6">
               <div className="flex items-center gap-2.5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -109,7 +117,7 @@ export default function Layout() {
                 </div>
                 <span className="text-sm font-semibold">AsistenciaPro</span>
               </div>
-              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground" aria-label="Cerrar menú">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -123,8 +131,8 @@ export default function Layout() {
 
       <div className="lg:pl-64">
         {/* Mobile top bar */}
-        <header className="lg:hidden sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/95 backdrop-blur px-4">
-          <button onClick={() => setOpen(true)} className="text-muted-foreground hover:text-foreground">
+        <header className="lg:hidden sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/95 backdrop-blur-sm px-4">
+          <button onClick={() => setOpen(true)} className="text-muted-foreground hover:text-foreground" aria-label="Abrir menú" aria-expanded={open}>
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2">

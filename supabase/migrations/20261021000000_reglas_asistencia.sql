@@ -9,8 +9,9 @@
 --  * Ausencias automáticas: cada madrugada se marca "ausente" a quien debía
 --    trabajar el día anterior y no fichó (necesita pg_cron, ver README).
 --
--- Ejecútalo DESPUÉS de 20261020000000_kiosco.sql. Se puede ejecutar más de
--- una vez.
+-- Ejecútalo DESPUÉS de 20261020000000_kiosco.sql.
+-- AVISO: ejecútala una sola vez, en orden. Volver a ejecutarla después de
+-- migraciones posteriores reemplazaría funciones por versiones antiguas.
 
 -- ---------------------------------------------------------------------------
 -- Ajustes (una sola fila)

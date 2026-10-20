@@ -184,7 +184,7 @@ export default function Turnos() {
       )}
 
       {view === "lista" ? (
-        <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+        <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
           {loading ? (
             <div className="flex h-40 items-center justify-center">
               <div className="h-8 w-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
@@ -231,10 +231,10 @@ export default function Turnos() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => { setEditing(t); setFormOpen(true); }}>
+                            <Button variant="ghost" size="icon" onClick={() => { setEditing(t); setFormOpen(true); }} aria-label={`Editar turno de ${t.empleado_nombre}`}>
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => setToDelete(t)}>
+                            <Button variant="ghost" size="icon" onClick={() => setToDelete(t)} aria-label={`Eliminar turno de ${t.empleado_nombre}`}>
                               <Trash2 className="h-4 w-4 text-rose-500" />
                             </Button>
                           </div>
