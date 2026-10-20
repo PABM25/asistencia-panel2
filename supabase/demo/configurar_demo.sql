@@ -46,7 +46,7 @@ alter table public.demo_config enable row level security;   -- sin políticas: n
 revoke all on public.demo_config from anon, authenticated;
 
 insert into public.demo_config (id, email, password)
-values (1, 'demo@pulso.cl', 'demo1234')     -- ← CAMBIA ESTOS DOS VALORES
+values (1, 'bemaker.dev@gmail.com', 'demo1234')    
 on conflict (id) do update set email = excluded.email, password = excluded.password;
 
 -- 2) Reinicio ----------------------------------------------------------------
