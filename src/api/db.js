@@ -25,6 +25,8 @@ const SCHEMAS = {
       'fecha_alta', 'estado', 'horario_entrada', 'horario_salida',
     ],
     numbers: [],
+    // Se pueden filtrar pero no escribir (los mantiene la base de datos).
+    readOnly: ['tiene_pin'],
   },
   RegistroAsistencia: {
     table: 'registro_asistencia',
@@ -45,6 +47,16 @@ const SCHEMAS = {
 };
 
 // Escapa los comodines de LIKE para que el texto buscado se tome literal.
+// Columnas que tienen todas las tablas y se pueden usar en filtros y orden.
+const SYSTEM_COLUMNS = ['id', 'created_date', 'updated_date'];
+
+// Lista blanca de columnas para filtros y orden: un nombre de campo nunca
+// llega a la consulta de PostgREST si no es una columna conocida.
+function checkField(schema, field) {
+  if (!schema.fields.has(field)) throw new Error(`Campo no permitido: ${field}`);
+  return field;
+}
+
 const likePattern = (text) => `%${String(text).replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 // Valor para la sintaxis de texto de PostgREST usada dentro de .or(...)
@@ -54,7 +66,8 @@ function isOperatorObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function applyCondition(builder, field, value) {
+function applyCondition(schema, builder, field, value) {
+  checkField(schema, field);
   if (!isOperatorObject(value)) {
     return value === null ? builder.is(field, null) : builder.eq(field, value);
   }
@@ -82,7 +95,8 @@ function applyCondition(builder, field, value) {
 
 // Convierte una condición simple al texto que entiende .or() de PostgREST.
 // Devuelve una lista: si tiene más de un elemento, deben cumplirse todos.
-function orClauses(field, value) {
+function orClauses(schema, field, value) {
+  checkField(schema, field);
   if (!isOperatorObject(value)) {
     return [value === null ? `${field}.is.null` : `${field}.eq.${orValue(value)}`];
   }
@@ -100,29 +114,29 @@ function orClauses(field, value) {
   });
 }
 
-function applyQuery(builder, query = {}) {
+function applyQuery(schema, builder, query = {}) {
   let b = builder;
   for (const [field, value] of Object.entries(query)) {
     if (value === undefined) continue;
     if (field === '$or') {
       const parts = value.flatMap((cond) =>
         Object.entries(cond).map(([f, v]) => {
-          const clauses = orClauses(f, v);
+          const clauses = orClauses(schema, f, v);
           return clauses.length > 1 ? `and(${clauses.join(',')})` : clauses[0];
         })
       );
       if (parts.length) b = b.or(parts.join(','));
     } else {
-      b = applyCondition(b, field, value);
+      b = applyCondition(schema, b, field, value);
     }
   }
   return b;
 }
 
-function applySort(builder, sort) {
+function applySort(schema, builder, sort) {
   if (!sort) return builder;
   const desc = sort.startsWith('-');
-  const field = desc ? sort.slice(1) : sort;
+  const field = checkField(schema, desc ? sort.slice(1) : sort);
   return builder.order(field, { ascending: !desc, nullsFirst: false });
 }
 
@@ -144,19 +158,35 @@ function clean(schema, data) {
 
 // Mensajes legibles para los errores de Postgres más habituales.
 const FRIENDLY_ERRORS = {
+  '22P02': 'Algún valor no tiene el formato correcto.',
+  '23503': 'El registro está relacionado con otros datos.',
   '23505': 'Ya existe un registro con esos datos (por ejemplo, el mismo empleado en la misma fecha).',
   '23502': 'Falta un dato obligatorio.',
   '23514': 'Algún valor no es válido.',
   '42501': 'No tienes permisos para esta acción.',
 };
 
+// Códigos con los que las funciones SQL de supabase/migrations lanzan
+// mensajes escritos para el usuario (raise exception ... using errcode).
+const OWN_MESSAGE_CODES = new Set(['22023', 'P0002']);
+
+// Mensaje que se puede mostrar en pantalla para un error de Supabase. El
+// mensaje original de Postgres puede revelar tablas, restricciones o partes
+// de la consulta, así que solo se muestra si lo escribimos nosotros.
+export function dbErrorMessage(error) {
+  if (FRIENDLY_ERRORS[error?.code]) return FRIENDLY_ERRORS[error.code];
+  if (OWN_MESSAGE_CODES.has(error?.code) && error.message) return error.message;
+  return 'Error en la base de datos. Inténtalo de nuevo.';
+}
+
 // PostgREST devuelve como máximo 1000 filas por petición.
 const PAGE_SIZE = 1000;
 
 function raise(error) {
   if (error) {
-    const err = new Error(FRIENDLY_ERRORS[error.code] || error.message || 'Error en la base de datos');
+    const err = new Error(dbErrorMessage(error));
     err.status = error.code === 'PGRST301' || error.code === '42501' ? 403 : undefined;
+    // El detalle completo queda solo para la consola (ver notifyError).
     err.details = error;
     throw err;
   }
@@ -167,8 +197,8 @@ function makeEntity(schema) {
 
   return {
     async filter(query = {}, { sort, limit, skip } = {}) {
-      let b = applyQuery(table().select('*'), query);
-      b = applySort(b, sort);
+      let b = applyQuery(schema, table().select('*'), query);
+      b = applySort(schema, b, sort);
       if (limit) {
         const from = skip || 0;
         b = b.range(from, from + limit - 1);
@@ -183,7 +213,7 @@ function makeEntity(schema) {
       const items = [];
       for (let from = 0; ; from += PAGE_SIZE) {
         // Se ordena también por id para que la paginación sea estable.
-        const b = applySort(applyQuery(table().select('*'), query), sort).order('id');
+        const b = applySort(schema, applyQuery(schema, table().select('*'), query), sort).order('id');
         const { data, error } = await b.range(from, from + PAGE_SIZE - 1);
         raise(error);
         items.push(...(data || []));
@@ -204,6 +234,7 @@ function makeEntity(schema) {
 
     async count(query = {}) {
       const { count, error } = await applyQuery(
+        schema,
         table().select('id', { count: 'exact', head: true }),
         query
       );
@@ -264,6 +295,12 @@ export async function rpc(fn, args = {}) {
 
 export const db = {
   entities: Object.fromEntries(
-    Object.entries(SCHEMAS).map(([name, schema]) => [name, makeEntity(schema)])
+    Object.entries(SCHEMAS).map(([name, schema]) => [
+      name,
+      makeEntity({
+        ...schema,
+        fields: new Set([...schema.columns, ...(schema.readOnly || []), ...SYSTEM_COLUMNS]),
+      }),
+    ])
   ),
 };

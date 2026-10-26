@@ -30,7 +30,8 @@ Al terminar tendrás:
    3. `supabase/migrations/20261020000000_kiosco.sql`
    4. `supabase/migrations/20261021000000_reglas_asistencia.sql`
    5. `supabase/migrations/20261022000000_correcciones.sql`
-   6. `supabase/datos_demo.sql`
+   6. `supabase/migrations/20261026000000_seguridad.sql`
+   7. `supabase/datos_demo.sql`
 3. Activa **pg_cron**: *Database → Extensions*, busca `pg_cron` y actívalo
    (en algunas versiones del panel está en *Integrations → Cron → Enable*).
 4. Crea la **cuenta demo**: *Authentication → Users → Add user → Create new user*.
@@ -39,10 +40,15 @@ Al terminar tendrás:
    - Marca **Auto Confirm User**.
 
    Como es el primer usuario del proyecto, queda como administrador.
-5. Abre `supabase/demo/configurar_demo.sql`, cambia el email y la contraseña en
-   la línea marcada con `← CAMBIA ESTOS DOS VALORES` (los mismos del paso 4),
-   pégalo en el SQL Editor y pulsa **Run**. Al final debe mostrar:
-   `empleados 12 · kiosco_demo 1 · cuenta_demo_admin 1`.
+5. Pega `supabase/demo/configurar_demo.sql` en el SQL Editor y, **allí**,
+   cambia `<EMAIL_DEMO>` y `<PASSWORD_DEMO>` en la línea marcada con
+   `← CAMBIA ESTOS DOS VALORES` (los mismos del paso 4). Pulsa **Run**. Al
+   final debe mostrar: `empleados 12 · kiosco_demo 1 · cuenta_demo_admin 1`.
+
+   No guardes las credenciales en el archivo del repositorio: el script se
+   niega a ejecutarse si siguen los marcadores, y en la base solo queda el hash
+   de la contraseña. Además impide que un visitante cambie la contraseña, el
+   email o el rol de la cuenta demo.
 6. Cierra el registro de cuentas: *Authentication → Sign In / Providers* →
    desactiva **Allow new users to sign up** → **Save**.
 7. Copia dos datos de *Project Settings → API* (los usarás en la parte 2):

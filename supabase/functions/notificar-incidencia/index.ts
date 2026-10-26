@@ -10,7 +10,32 @@
 //   EMAIL_FROM      remitente verificado en Resend, p. ej. "Pulso <avisos@tudominio.cl>"
 //   APP_URL         URL pública de la app, p. ej. https://asistencia.tudominio.cl
 // SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY los inyecta Supabase automáticamente.
+import { createHash, timingSafeEqual } from "node:crypto";
 import { createClient } from "npm:@supabase/supabase-js@2";
+
+// Límites para el cuerpo de la petición: la llaman solo los triggers de la
+// base, así que algo más grande es un error o un abuso.
+const MAX_BODY_BYTES = 64 * 1024;
+const MAX_EMPLEADOS = 500;
+const MAX_TEXTO = 300;
+
+// Compara el secreto en tiempo constante (los hash igualan el largo), para
+// que el tiempo de respuesta no revele cuántos caracteres coinciden.
+function secretoValido(recibido: string | null, esperado: string) {
+  if (!recibido) return false;
+  const a = createHash("sha256").update(recibido).digest();
+  const b = createHash("sha256").update(esperado).digest();
+  return timingSafeEqual(a, b);
+}
+
+// Texto acotado y sin saltos de línea (el asunto del email es una cabecera).
+const texto = (v: unknown, def = "-") =>
+  v === null || v === undefined || v === ""
+    ? def
+    : String(v).replace(/[\r\n]+/g, " ").slice(0, MAX_TEXTO);
+
+const fechaValida = (v: unknown) =>
+  typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "-";
 
 const escapeHtml = (v: unknown) =>
   String(v ?? "-").replace(/[&<>"']/g, (c) =>
@@ -64,17 +89,30 @@ Deno.serve(async (req) => {
   }
 
   const secret = Deno.env.get("NOTIFY_SECRET");
-  if (!secret || req.headers.get("x-notify-secret") !== secret) {
+  if (!secret || !secretoValido(req.headers.get("x-notify-secret"), secret)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const resendKey = Deno.env.get("RESEND_API_KEY");
   const from = Deno.env.get("EMAIL_FROM");
   if (!resendKey || !from) {
-    return Response.json({ error: "Faltan RESEND_API_KEY o EMAIL_FROM" }, { status: 500 });
+    // El detalle va al log de la función, no a la respuesta.
+    console.error("Faltan los secretos RESEND_API_KEY o EMAIL_FROM");
+    return Response.json({ error: "Configuración incompleta" }, { status: 500 });
   }
 
-  const body = await req.json();
+  let body: Record<string, unknown>;
+  try {
+    const raw = await req.text();
+    if (raw.length > MAX_BODY_BYTES) {
+      return Response.json({ error: "Payload too large" }, { status: 413 });
+    }
+    body = JSON.parse(raw);
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("no es un objeto");
+  } catch {
+    return Response.json({ error: "Bad request" }, { status: 400 });
+  }
+
   const appUrl = (Deno.env.get("APP_URL") || "").replace(/\/$/, "");
 
   const admin = createClient(
@@ -86,40 +124,59 @@ Deno.serve(async (req) => {
     .select("email")
     .eq("role", "admin")
     .not("email", "is", null);
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("No se pudo leer la lista de administradores:", error);
+    return Response.json({ error: "Error interno" }, { status: 500 });
+  }
 
   let subject: string;
   let html: string;
   if (body.tipo === "resumen_ausencias") {
-    const empleados: string[] = Array.isArray(body.empleados) ? body.empleados.map(String) : [];
-    if (!empleados.length) return Response.json({ enviados: 0, fallos: [] });
-    subject = `Ausencias del ${body.fecha}: ${empleados.length}`;
-    html = renderResumen(String(body.fecha || "-"), empleados, appUrl);
+    const empleados = Array.isArray(body.empleados)
+      ? body.empleados.slice(0, MAX_EMPLEADOS).map((e) => texto(e))
+      : [];
+    if (!empleados.length) return Response.json({ enviados: 0, fallos: 0 });
+    const fecha = fechaValida(body.fecha);
+    subject = `Ausencias del ${fecha}: ${empleados.length}`;
+    html = renderResumen(fecha, empleados, appUrl);
   } else {
-    const { empleado, fecha, estado, hora_entrada, notas } = body;
-    const tipo = estado === "retraso" ? "Retraso" : "Ausencia injustificada";
+    // Lista blanca: solo hay dos tipos de incidencia.
+    if (body.estado !== "retraso" && body.estado !== "ausente") {
+      return Response.json({ error: "Bad request" }, { status: 400 });
+    }
+    const tipo = body.estado === "retraso" ? "Retraso" : "Ausencia injustificada";
     const vars = {
       tipo,
-      empleado: empleado || "Empleado",
-      fecha: fecha || "-",
-      hora_entrada: hora_entrada || "-",
-      notas: notas || "-",
+      empleado: texto(body.empleado, "Empleado"),
+      fecha: fechaValida(body.fecha),
+      hora_entrada: texto(body.hora_entrada),
+      notas: texto(body.notas),
     };
     html = renderEmail(vars, appUrl);
     subject = `${tipo}: ${vars.empleado} (${vars.fecha})`;
   }
 
   let enviados = 0;
-  const fallos: string[] = [];
+  let fallos = 0;
   for (const { email } of admins ?? []) {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: email, subject, html }),
-    });
-    if (res.ok) enviados++;
-    else fallos.push(`${email}: ${res.status}`);
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from, to: email, subject, html }),
+      });
+      if (res.ok) enviados++;
+      else {
+        fallos++;
+        console.error(`Resend respondió ${res.status} para un destinatario`);
+      }
+    } catch (e) {
+      fallos++;
+      console.error("No se pudo contactar con Resend:", e);
+    }
   }
 
+  // Solo totales: la respuesta queda guardada en net._http_response y no debe
+  // incluir los emails de los administradores.
   return Response.json({ enviados, fallos });
 });

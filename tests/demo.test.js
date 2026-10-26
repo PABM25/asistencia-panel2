@@ -1,12 +1,25 @@
 import { before, test } from "node:test";
 import assert from "node:assert/strict";
-import { crearBase, leer } from "./helpers/db.js";
+import { ADMIN, USUARIO, crearBase, leer } from "./helpers/db.js";
 
 const TOKEN = "demo-publico-pulso-kiosco-no-usar-en-produccion";
 const DEMO_ID = "00000000-0000-0000-0000-0000000000de";
-const configurar = leer("supabase/demo/configurar_demo.sql");
-// La cuenta demo se lee del propio script (cada uno pone la suya).
-const [, EMAIL, PASSWORD] = configurar.match(/insert into public\.demo_config[\s\S]*?values \(1, '([^']+)', '([^']+)'\)/);
+const EMAIL = "demo@pulso.test";
+const PASSWORD = "clave-de-prueba";
+const SIN_COMPLETAR = leer("supabase/demo/configurar_demo.sql");
+// Lo que hace quien lo ejecuta: cambia los marcadores en el SQL Editor.
+const configurar = SIN_COMPLETAR
+  .replace("'<EMAIL_DEMO>'::text", `'${EMAIL}'::text`)
+  .replace("'<PASSWORD_DEMO>'::text", `'${PASSWORD}'::text`);
+
+test("el script del repositorio no trae credenciales y no corre sin ellas", async () => {
+  assert.doesNotMatch(SIN_COMPLETAR, /demo1234/);
+  const b = await crearBase();
+  await b.db.exec(leer("supabase/datos_demo.sql"));
+  await assert.rejects(b.db.exec(SIN_COMPLETAR), /Cambia <EMAIL_DEMO> y <PASSWORD_DEMO>/);
+  await b.db.exec("rollback");
+  assert.equal(await b.uno("select to_regclass('public.demo_config')::text"), null);
+});
 
 test("no se instala en un proyecto con empleados reales", async () => {
   const b = await crearBase();
@@ -83,6 +96,43 @@ test("se puede volver a ejecutar aunque haya empleados de visitantes", async () 
   await b.db.exec("insert into public.empleado (id, nombre, apellidos) values ('visita-2', 'Otra', 'Visita')");
   await b.db.exec(configurar);
   assert.equal(await b.uno("select count(*)::int from public.empleado where id = 'visita-2'"), 0);
+});
+
+test("la contraseña no se guarda en texto plano", async () => {
+  const [cfg] = await b.q("select * from public.demo_config");
+  assert.equal("password" in cfg, false);
+  assert.notEqual(cfg.password_hash, PASSWORD);
+  assert.equal(await b.uno("select password_hash = extensions.crypt($1, password_hash) from public.demo_config", [PASSWORD]), true);
+});
+
+test("un visitante no puede cambiar el rol de la cuenta demo", async () => {
+  await b.comoAdmin(`update public.profiles set role = 'user' where id = '${DEMO_ID}'`);
+  assert.equal(await b.uno(`select role from public.profiles where id = '${DEMO_ID}'`), "admin");
+  // Las demás cuentas no se ven afectadas.
+  await b.comoAdmin(`update public.profiles set role = 'user' where id = '${USUARIO}'`);
+  await b.comoAdmin(`update public.profiles set role = 'admin' where id = '${USUARIO}'`);
+  assert.equal(await b.uno(`select role from public.profiles where id = '${USUARIO}'`), "admin");
+});
+
+test("un visitante no puede cambiar la contraseña ni el email de la cuenta demo", async () => {
+  // Base aparte: PGlite no deja volver de "set session authorization".
+  const otra = await crearBase();
+  await otra.db.exec(leer("supabase/datos_demo.sql"));
+  await otra.db.exec(`insert into auth.users (id, email) values ('${DEMO_ID}', '${EMAIL}')`);
+  await otra.db.exec(configurar);
+  // Supabase Auth aplica updateUser() con el rol supabase_auth_admin.
+  await otra.db.exec(`
+    create role supabase_auth_admin;
+    grant usage on schema auth to supabase_auth_admin;
+    grant all on auth.users to supabase_auth_admin;
+    set session authorization supabase_auth_admin;
+    update auth.users set encrypted_password = 'otra', email = 'robada@x.cl';`);
+  const usuarios = await otra.q("select id, email, encrypted_password from auth.users order by id");
+  const demo = usuarios.find((u) => u.id === DEMO_ID);
+  assert.equal(demo.email, EMAIL);
+  assert.notEqual(demo.encrypted_password, "otra");
+  // Las demás cuentas sí se pueden cambiar.
+  assert.equal(usuarios.find((u) => u.id === ADMIN).email, "robada@x.cl");
 });
 
 test("nadie puede reiniciar la demo ni leer su configuración desde la app", async () => {

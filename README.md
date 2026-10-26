@@ -39,6 +39,8 @@ docs/DEMO.md              cómo publicar la demo
    5. `supabase/migrations/20261022000000_correcciones.sql` (turnos sin
       duplicados, resumen del Dashboard, resumen diario de ausencias por email,
       datos del empleado siempre al día).
+   6. `supabase/migrations/20261026000000_seguridad.sql` (bloqueo progresivo
+      del PIN y validación de horas y textos en la base de datos).
 
    O con la CLI: `supabase link --project-ref <ref>` y `supabase db push`.
 
@@ -117,8 +119,10 @@ Detalles:
 
 - La hora la pone el servidor en la zona horaria `America/Santiago` (función
   `zona_horaria()` en la migración), no el reloj del dispositivo.
-- Tras 5 PIN incorrectos, el empleado queda bloqueado 5 minutos. Un admin puede
-  desbloquearlo antes en *Empleados → editar → Desbloquear el PIN*.
+- Cada 5 PIN incorrectos seguidos, el empleado queda bloqueado: 5 minutos la
+  primera vez, luego 30 minutos, 2 horas y 24 horas. Un PIN correcto reinicia
+  la cuenta. Un admin puede desbloquearlo antes en *Empleados → editar →
+  Desbloquear el PIN*.
 - No se puede marcar dos veces la entrada o la salida del mismo día; para
   corregir una hora, edita el registro en *Asistencia*.
 - Los registros del kiosco aparecen con origen `empleado`; los del fichaje
@@ -161,7 +165,7 @@ estados), un trigger de la base de datos llama a la función
 usando [Resend](https://resend.com). Las ausencias automáticas no generan un
 email cada una: se envía un resumen diario con todas.
 
-Si ya habías desplegado la función antes de la migración `20261022000000`,
+Si ya habías desplegado la función antes de la migración `20261026000000`,
 vuelve a desplegarla (`supabase functions deploy notificar-incidencia
 --no-verify-jwt`) para que entienda el resumen diario.
 
@@ -212,5 +216,10 @@ variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`, y agrega una regla
 para que todas las rutas sirvan `index.html` (en Vercel/Netlify suele ser
 automático para apps de Vite; en Netlify crea `public/_redirects` con
 `/* /index.html 200`).
+
+`public/_headers` agrega las cabeceras de seguridad (Content-Security-Policy,
+HSTS, etc.) en Cloudflare Pages y Netlify. La CSP solo permite conectarse a
+`*.supabase.co`: si usas un dominio propio para Supabase, agrégalo a
+`connect-src`. En otro hosting, configura las mismas cabeceras.
 
 

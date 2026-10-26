@@ -42,6 +42,12 @@ export function validarPin(pin) {
   return "";
 }
 
+// "45 minuto(s)" o, desde una hora, "2 hora(s)" (el bloqueo del PIN llega a 24 h).
+function duracion(minutos) {
+  const m = Number(minutos) || 0;
+  return m >= 60 ? `${Math.ceil(m / 60)} hora(s)` : `${m} minuto(s)`;
+}
+
 // Convierte la respuesta de kiosco_fichar() / admin_fichar() en un mensaje.
 export function mensajeFichaje(r) {
   if (r?.ok) {
@@ -56,7 +62,7 @@ export function mensajeFichaje(r) {
       r?.intentos_restantes > 0
         ? `PIN incorrecto. Te quedan ${r.intentos_restantes} intento(s).`
         : "PIN incorrecto.",
-    bloqueado: `Demasiados intentos fallidos. Espera ${r?.minutos} minuto(s) o pide a un administrador que te asigne un PIN nuevo.`,
+    bloqueado: `Demasiados intentos fallidos. Espera ${duracion(r?.minutos)} o pide a un administrador que desbloquee tu PIN.`,
     sin_pin: "No tienes PIN asignado. Pide a un administrador que te asigne uno.",
     empleado_no_encontrado: "Empleado no encontrado o inactivo.",
     kiosco_no_autorizado: "Este dispositivo ya no está autorizado como kiosco.",
