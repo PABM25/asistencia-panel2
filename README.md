@@ -1,9 +1,41 @@
 # Pulso — control de asistencia
 
-Panel para gestionar empleados, fichajes, turnos, horarios e informes.
-Frontend en React + Vite + Tailwind (shadcn/ui). Backend en **Supabase**:
-login, base de datos Postgres y una Edge Function que avisa por email de
-retrasos y ausencias.
+Panel web para registrar fichajes, detectar retrasos y ausencias, planificar
+turnos y exportar las horas trabajadas. Los empleados fichan en un kiosco con
+su PIN; los administradores gestionan todo desde el navegador.
+
+**Stack:** React 18, Vite, Tailwind 4 y shadcn/ui en el frontend. Supabase
+(Auth, Postgres con RLS, `pg_cron` y una Edge Function) en el backend. Resend
+para los emails.
+
+## Requisitos
+
+- Node.js 22 (ver `.nvmrc`)
+- Un proyecto de [Supabase](https://supabase.com)
+- Opcional: una cuenta de [Resend](https://resend.com) para los avisos por email
+
+## Inicio rápido
+
+Con la base de datos ya creada ([paso 1](#1-base-de-datos)):
+
+```bash
+npm install
+cp .env.example .env.local   # completa VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY
+npm run dev                  # http://localhost:5173
+```
+
+Los dos valores están en Supabase → *Project Settings → API* (`Project URL` y
+la clave `anon public`).
+
+## Comandos
+
+| Comando | Qué hace |
+| --- | --- |
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Genera `dist/` para producción |
+| `npm run preview` | Sirve `dist/` en local |
+| `npm test` | Pruebas de migraciones y cálculo de horas |
+| `npm run lint` | Revisa el código con ESLint (`lint:fix` corrige lo automático) |
 
 ## Estructura
 
@@ -12,165 +44,88 @@ src/
   api/supabaseClient.js   cliente de Supabase (lee las variables VITE_*)
   api/db.js               capa de datos: db.entities.Empleado.filter(...), create, update...
   lib/AuthContext.jsx     sesión y rol del usuario
-  pages/                  Dashboard, Empleados, Asistencia, Turnos, Horarios, Informes,
-                          Kiosco, Ajustes, login...
+  lib/horas.js            cálculo de horas trabajadas y extra
+  pages/                  una página por ruta: Dashboard, Empleados, Asistencia, Turnos...
+  index.css               tema visual (colores, tipografías, radios, sombras)
 supabase/
-  migrations/             tablas, seguridad (RLS), kiosco, reglas de asistencia
+  migrations/             esquema, seguridad (RLS), kiosco y reglas de asistencia
   functions/notificar-incidencia/   envío de emails con Resend
-  datos_demo.sql          datos de prueba (y datos_demo_borrar.sql)
-  demo/configurar_demo.sql  SOLO para el proyecto de la demo pública
+  datos_demo.sql          datos de prueba (datos_demo_borrar.sql los quita)
+  demo/configurar_demo.sql  solo para el proyecto de la demo pública
 tests/                    pruebas (npm test)
-docs/DEMO.md              cómo publicar la demo
-.github/workflows/        verificación automática y mantener la demo activa
+docs/DEMO.md              cómo publicar la demo pública
+.github/workflows/        verificación en cada push y ping para mantener la demo activa
 ```
 
-## 1. Crear el proyecto en Supabase
+## Puesta en marcha
 
-1. Crea un proyecto en <https://supabase.com>.
-2. Abre **SQL Editor** y ejecuta, en este orden, el contenido de:
-   1. `supabase/migrations/20261019000000_esquema_inicial.sql`
-   2. `supabase/migrations/20261019000001_registro_unico_y_admin.sql`
-      (un solo registro de asistencia por empleado y día; si ya había
-      duplicados, los fusiona conservando la entrada más temprana y la salida
-      más tardía).
-   3. `supabase/migrations/20261020000000_kiosco.sql` (modo kiosco con PIN).
-   4. `supabase/migrations/20261021000000_reglas_asistencia.sql` (tolerancia,
-      turnos de noche, ausencias automáticas, feriados y página Ajustes).
-   5. `supabase/migrations/20261022000000_correcciones.sql` (turnos sin
-      duplicados, resumen del Dashboard, resumen diario de ausencias por email,
-      datos del empleado siempre al día).
-   6. `supabase/migrations/20261026000000_seguridad.sql` (bloqueo progresivo
-      del PIN y validación de horas y textos en la base de datos).
+### 1. Base de datos
 
-   O con la CLI: `supabase link --project-ref <ref>` y `supabase db push`.
+En el **SQL Editor** de Supabase, ejecuta cada migración **una sola vez y en
+este orden**. Volver a ejecutar una antigua después de las siguientes
+reemplazaría funciones por versiones anteriores.
 
-   **Ejecuta cada migración una sola vez y en orden.** Volver a ejecutar una
-   antigua después de las siguientes reemplazaría funciones por versiones
-   anteriores.
+| Migración | Qué agrega |
+| --- | --- |
+| `20261019000000_esquema_inicial.sql` | Tablas, roles y seguridad por fila (RLS) |
+| `20261019000001_registro_unico_y_admin.sql` | Un registro por empleado y día; fusiona duplicados conservando la entrada más temprana y la salida más tardía |
+| `20261020000000_kiosco.sql` | Kiosco de fichaje con PIN |
+| `20261021000000_reglas_asistencia.sql` | Tolerancia, turnos de noche, ausencias automáticas, feriados y página Ajustes |
+| `20261022000000_correcciones.sql` | Turnos sin duplicados, resumen del Dashboard, resumen diario de ausencias por email |
+| `20261026000000_seguridad.sql` | Bloqueo progresivo del PIN y validación de horas y textos |
 
-## 2. Ejecutar la app en local
+Con la CLI: `supabase link --project-ref <ref>` y luego `supabase db push`.
 
-```bash
-npm install
-cp .env.example .env.local   # y completa los dos valores
-npm run dev
-```
+Para cargar datos de ejemplo, ejecuta `supabase/datos_demo.sql`.
 
-Los valores están en Supabase → **Project Settings → API** (`Project URL` y
-la clave `anon public`). Abre <http://localhost:5173>.
+### 2. Autenticación
 
-## 3. Usuarios y permisos
-
-- **El primer usuario que se registra queda como administrador.** Los
-  siguientes entran como `user` y ven una pantalla de "Acceso restringido".
-- Para dar acceso a otra persona, en el SQL Editor:
-
-  ```sql
-  update public.profiles set role = 'admin' where email = 'persona@dominio.cl';
-  ```
-
-- Las reglas de seguridad (RLS) hacen que solo los administradores puedan leer
-  o modificar empleados, registros y turnos, aunque alguien tenga la clave anon.
-- **Cierra el registro cuando ya existan los administradores:** en Supabase,
-  *Authentication → Sign In / Providers*, desactiva *Allow new users to sign
-  up*. La app oculta entonces "Crear cuenta". Para dar acceso a alguien nuevo,
-  créalo en *Authentication → Users → Add user* (marca *Auto Confirm User*) y
-  hazlo admin con el `update` de arriba.
-
-### Configuración de Auth en Supabase (Authentication)
+En Supabase → *Authentication*:
 
 - **URL Configuration:** pon tu dominio en *Site URL* y agrega
   `http://localhost:5173/**` y `https://tu-dominio/**` en *Redirect URLs*.
-- **Registro con código de 6 dígitos:** la pantalla de registro pide el código
-  que llega por email. En *Email Templates → Confirm signup* incluye
-  `{{ .Token }}` en el mensaje (puedes dejar también el enlace). Si
-  desactivas *Confirm email*, el registro entra directo sin código.
-- **Recuperar contraseña:** en *Email Templates → Reset Password* cambia el
-  enlace por este, para que funcione aunque se abra en otro navegador o en el
-  teléfono:
+- **Código de registro:** en *Email Templates → Confirm signup* incluye
+  `{{ .Token }}`; la pantalla de registro pide ese código de 6 dígitos. Si
+  desactivas *Confirm email*, el registro entra sin código.
+- **Recuperar contraseña:** en *Email Templates → Reset Password* usa este
+  enlace. El de por defecto solo funciona en el navegador donde se pidió:
 
   ```html
   <a href="{{ .SiteURL }}/reset-password?token_hash={{ .TokenHash }}&type=recovery">Cambiar contraseña</a>
   ```
 
-  Con el enlace por defecto solo funciona en el mismo navegador donde se pidió.
-- **Google:** en *Providers → Google* activa el proveedor con tu Client ID y
-  Secret de Google Cloud. Si no está activado, la app oculta el botón.
-- Para producción conviene configurar un SMTP propio en *Auth → SMTP*; el de
-  Supabase tiene un límite bajo de emails por hora.
+- **Google (opcional):** activa *Providers → Google* con tu Client ID y Secret.
+  Si no está activo, la app oculta el botón.
+- **SMTP propio:** recomendado en producción (*Auth → SMTP*); el de Supabase
+  envía pocos emails por hora.
 
-## Kiosco de fichaje
+### 3. Administradores
 
-Los empleados marcan su entrada y salida desde un dispositivo en la entrada
-(tablet o computador), eligiendo su nombre y escribiendo su PIN. No necesitan
-cuenta.
+- **El primer usuario que se registra queda como administrador.** Los
+  siguientes entran como `user` y ven «Acceso restringido».
+- Para dar acceso a otra persona:
 
-1. **Asigna un PIN** a cada empleado en *Empleados → editar → PIN para el
-   kiosco* (4 a 6 dígitos; se rechazan PIN obvios como 1111 o 1234). El PIN se
-   guarda cifrado y no se puede volver a ver; si alguien lo olvida, asígnale
-   uno nuevo.
-2. **Activa el dispositivo:** en la tablet, inicia sesión como administrador,
-   ve a *Kiosco* y pulsa *Activar este dispositivo como kiosco*. Se cierra la
-   sesión y la tablet queda en `/kiosco`.
-3. Para dejar de usar un dispositivo (pérdida, cambio), pulsa *Revocar* en la
-   misma página: deja de funcionar al instante.
+  ```sql
+  update public.profiles set role = 'admin' where email = 'persona@dominio.cl';
+  ```
 
-Detalles:
+- **Cierra el registro** cuando existan los administradores: *Authentication →
+  Sign In / Providers* → desactiva *Allow new users to sign up*. La app oculta
+  «Crear cuenta». Las cuentas nuevas se crean en *Authentication → Users → Add
+  user* (con *Auto Confirm User*) y se hacen admin con el `update` de arriba.
 
-- La hora la pone el servidor en la zona horaria `America/Santiago` (función
-  `zona_horaria()` en la migración), no el reloj del dispositivo.
-- Cada 5 PIN incorrectos seguidos, el empleado queda bloqueado: 5 minutos la
-  primera vez, luego 30 minutos, 2 horas y 24 horas. Un PIN correcto reinicia
-  la cuenta. Un admin puede desbloquearlo antes en *Empleados → editar →
-  Desbloquear el PIN*.
-- No se puede marcar dos veces la entrada o la salida del mismo día; para
-  corregir una hora, edita el registro en *Asistencia*.
-- Los registros del kiosco aparecen con origen `empleado`; los del fichaje
-  rápido del panel, con origen `admin`.
-- Si el navegador borra los datos del sitio (o usas modo incógnito), el
-  dispositivo pierde la activación y hay que activarlo de nuevo.
+### 4. Ausencias automáticas
 
-## Reglas de asistencia (página Ajustes)
+Activa `pg_cron` en *Database → Extensions* y pulsa **Programar** en la
+página *Ajustes* de la app. Desde ahí también se marcan a mano las ausencias
+de un día.
 
-- **Retraso:** se compara la hora de entrada con el **turno del día** (si el
-  empleado tiene uno asignado) o con su **horario fijo**, más los minutos de
-  **tolerancia** (5 por defecto).
-- **Turnos de noche:** si alguien marca la salida antes del mediodía y su
-  jornada de ayer cruzaba la medianoche (p. ej. 22:00–06:00) y quedó abierta,
-  la salida cierra la jornada de ayer.
-- **Horas trabajadas y extra** (Informes): entrada a salida, menos el descanso
-  del turno o el descanso por defecto (solo en jornadas de más de 6 horas). Las
-  horas extra son lo que supera la jornada esperada. Los días con entrada pero
-  sin salida no suman horas y se indican aparte.
-- **Ausencias automáticas:** cada madrugada se marca "ausente" (origen
-  `sistema`) a quien debía trabajar el día anterior y no tiene ningún registro.
-  Debía trabajar si tenía turno ese día o, si no usa turnos esa semana, si era
-  día laboral y no feriado. Los feriados se cargan en *Ajustes*.
+### 5. Avisos por email (opcional)
 
-  Para que corra sola hace falta **pg_cron**: en Supabase ve a *Database →
-  Extensions*, activa `pg_cron` y luego pulsa *Programar* en *Ajustes*. Ahí
-  también puedes marcar a mano las ausencias de un día.
-  Las ausencias automáticas se avisan en **un solo email resumen** por día.
-- **Dashboard:** "Trabajan hoy" y "Ausentes / sin fichar" usan esta misma
-  regla; "sin fichar" solo cuenta a quien ya pasó su hora de entrada (más la
-  tolerancia).
-- **Turnos:** un empleado no puede tener dos turnos que empiecen a la misma
-  hora el mismo día; la asignación por departamento omite a quien ya lo tiene.
+Sin esta configuración la app funciona igual; solo no envía avisos.
 
-## 4. Avisos por email de retrasos y ausencias
-
-Cuando un registro se crea como `retraso`/`ausente` (o cambia a uno de esos
-estados), un trigger de la base de datos llama a la función
-`notificar-incidencia`, que envía un email a todos los administradores
-usando [Resend](https://resend.com). Las ausencias automáticas no generan un
-email cada una: se envía un resumen diario con todas.
-
-Si ya habías desplegado la función antes de la migración `20261026000000`,
-vuelve a desplegarla (`supabase functions deploy notificar-incidencia
---no-verify-jwt`) para que entienda el resumen diario.
-
-1. Crea una cuenta en Resend, verifica tu dominio y genera una API key.
-2. Despliega la función y sus secretos (CLI de Supabase):
+1. En Resend, verifica tu dominio y genera una API key.
+2. Despliega la función y sus secretos:
 
    ```bash
    supabase functions deploy notificar-incidencia --no-verify-jwt
@@ -181,7 +136,7 @@ vuelve a desplegarla (`supabase functions deploy notificar-incidencia
      APP_URL="https://tu-dominio"
    ```
 
-3. Guarda en Vault la URL de la función y la misma clave (SQL Editor):
+3. Guarda en Vault la URL de la función y la misma clave:
 
    ```sql
    select vault.create_secret(
@@ -190,8 +145,66 @@ vuelve a desplegarla (`supabase functions deploy notificar-incidencia
    select vault.create_secret('una-clave-larga-al-azar', 'notificar_incidencia_secret');
    ```
 
-Mientras estos dos secretos no existan, la app funciona igual y simplemente no
-envía avisos. Los intentos de envío quedan en la tabla `net._http_response`.
+Si desplegaste la función antes de la migración `20261026000000`, vuelve a
+desplegarla para que entienda el resumen diario. Los intentos de envío quedan
+en la tabla `net._http_response`.
+
+## Cómo funciona
+
+### Kiosco de fichaje
+
+Los empleados marcan entrada y salida en una tablet o computador, eligiendo su
+nombre y escribiendo su PIN. No necesitan cuenta.
+
+1. **Asigna un PIN** en *Empleados → editar → PIN para el kiosco*: 4 a 6
+   dígitos, sin PIN obvios como 1111 o 1234. Se guarda cifrado y no se puede
+   volver a ver; si alguien lo olvida, asígnale uno nuevo.
+2. **Activa el dispositivo:** en la tablet, entra como administrador, ve a
+   *Kiosco* y pulsa *Activar este dispositivo como kiosco*. La sesión se cierra
+   y la tablet queda en `/kiosco`.
+3. **Revoca** un dispositivo perdido o reemplazado desde la misma página: deja
+   de funcionar al instante.
+
+Reglas del kiosco:
+
+- La hora la pone el servidor en `America/Santiago` (función `zona_horaria()`),
+  no el reloj del dispositivo.
+- Cada 5 PIN incorrectos seguidos, el empleado queda bloqueado: 5 minutos, luego
+  30 minutos, 2 horas y 24 horas. Un PIN correcto reinicia la cuenta. Un admin
+  puede desbloquearlo en *Empleados → editar → Desbloquear el PIN*.
+- No se puede marcar dos veces la entrada o la salida del mismo día. Las
+  correcciones se hacen en *Asistencia*.
+- El origen de cada registro indica quién lo creó: `empleado` (kiosco), `admin`
+  (fichaje rápido del panel) o `sistema` (ausencia automática).
+- Si el navegador borra los datos del sitio, o en modo incógnito, el
+  dispositivo pierde la activación.
+
+### Reglas de asistencia
+
+Se configuran en la página *Ajustes*.
+
+- **Retraso:** la entrada se compara con el turno del día o, si no hay, con el
+  horario fijo del empleado, más la tolerancia (5 minutos por defecto).
+- **Turnos de noche:** una salida marcada antes del mediodía cierra la jornada
+  de ayer si esta cruzaba la medianoche (p. ej. 22:00–06:00) y quedó abierta.
+- **Horas trabajadas:** de la entrada a la salida, menos el descanso del turno
+  o el descanso por defecto (solo en jornadas de más de 6 horas). Los días sin
+  salida no suman horas y se muestran aparte.
+- **Horas extra:** lo que supera la jornada esperada.
+- **Ausencias automáticas:** cada madrugada se marca ausente a quien debía
+  trabajar el día anterior y no tiene registro. Debía trabajar si tenía turno
+  o, sin turnos esa semana, si era día laboral y no feriado.
+- **Dashboard:** «Sin fichar» solo cuenta a quien ya pasó su hora de entrada
+  más la tolerancia.
+- **Turnos:** un empleado no puede tener dos turnos que empiecen a la misma
+  hora el mismo día; la asignación por departamento omite a quien ya lo tiene.
+
+### Avisos por email
+
+Cuando un registro se crea como `retraso` o `ausente`, o cambia a uno de esos
+estados, un trigger llama a la función `notificar-incidencia`, que avisa a
+todos los administradores. Las ausencias automáticas llegan en un solo resumen
+diario.
 
 ## Pruebas
 
@@ -199,27 +212,34 @@ envía avisos. Los intentos de envío quedan en la tabla `net._http_response`.
 npm test
 ```
 
-Prueba las migraciones sobre un Postgres en memoria (PGlite) con Supabase
-simulado: permisos por rol, kiosco y PIN, reglas de asistencia, ausencias,
-avisos por email y datos de prueba; y el cálculo de horas. Ejecútalas después
-de cambiar una migración o `src/lib/horas.js`.
+Ejecutan las migraciones sobre un Postgres en memoria (PGlite) con Supabase
+simulado y cubren permisos por rol, kiosco y PIN, reglas de asistencia,
+ausencias, avisos, datos de prueba y cálculo de horas. Córrelas después de
+cambiar una migración o `src/lib/horas.js`. GitHub Actions las ejecuta en cada
+push junto con el lint y el build.
 
-## 5. Publicar
+## Diseño
 
-**Demo pública para mostrar a clientes:** sigue [docs/DEMO.md](docs/DEMO.md)
-(Cloudflare Pages + un proyecto de Supabase solo para la demo, que se reinicia
-cada noche).
+El tema vive en `src/index.css`: lienzo blanco casi monocromo, títulos en
+serif de peso 400 (clase `page-title`) y un único acento melocotón con texto
+siena para lo que pide atención. Los colores por estado de asistencia están
+en `src/lib/constants.js`.
 
-`npm run build` genera la carpeta `dist/`, que puedes publicar en Cloudflare
-Pages, Netlify o cualquier hosting estático. Configura ahí las
-variables `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`, y agrega una regla
-para que todas las rutas sirvan `index.html` (en Vercel/Netlify suele ser
-automático para apps de Vite; en Netlify crea `public/_redirects` con
-`/* /index.html 200`).
+Las tipografías (Source Serif 4 e Inter) se instalan como paquetes y se sirven
+desde el propio sitio, porque la política de seguridad no permite Google Fonts.
 
-`public/_headers` agrega las cabeceras de seguridad (Content-Security-Policy,
-HSTS, etc.) en Cloudflare Pages y Netlify. La CSP solo permite conectarse a
-`*.supabase.co`: si usas un dominio propio para Supabase, agrégalo a
-`connect-src`. En otro hosting, configura las mismas cabeceras.
+## Publicar
 
+`npm run build` genera `dist/`, que se publica en cualquier hosting estático
+(Cloudflare Pages, Netlify, Vercel):
 
+1. Configura `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
+2. Haz que todas las rutas sirvan `index.html`. En Netlify, crea
+   `public/_redirects` con `/* /index.html 200`.
+3. Revisa las cabeceras de seguridad de `public/_headers` (CSP, HSTS…), que
+   Cloudflare Pages y Netlify aplican solas. La CSP solo permite conectarse a
+   `*.supabase.co`: si usas un dominio propio para Supabase, agrégalo a
+   `connect-src`. En otro hosting, configura las mismas cabeceras.
+
+Para la **demo pública** que se reinicia cada noche, sigue
+[docs/DEMO.md](docs/DEMO.md).
