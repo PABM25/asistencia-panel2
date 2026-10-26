@@ -40,9 +40,9 @@ function NavLinks({ onNavigate }) {
           onClick={onNavigate}
           className={({ isActive }) =>
             cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+              "flex items-center gap-3 rounded-full px-4 py-2.5 text-[15px] font-normal transition-colors",
               isActive
-                ? "bg-primary text-primary-foreground shadow-xs"
+                ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             )
           }
@@ -66,7 +66,7 @@ function UserFooter() {
       )}
       <button
         onClick={() => logout()}
-        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        className="flex w-full items-center gap-2 rounded-full px-4 py-2 text-sm font-normal text-muted-foreground hover:bg-accent hover:text-accent-foreground"
       >
         <LogOut className="h-4 w-4" />
         Cerrar sesión
@@ -92,11 +92,11 @@ export default function Layout() {
       {/* Menú lateral (escritorio) */}
       <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 flex-col border-r bg-background">
         <div className="flex h-16 items-center gap-2.5 border-b px-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Fingerprint className="h-5 w-5" />
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold">Pulso</span>
+            <span className="font-heading text-xl font-normal tracking-[-0.015em]">Pulso</span>
             <span className="text-xs text-muted-foreground">Panel de control</span>
           </div>
         </div>
@@ -113,10 +113,10 @@ export default function Layout() {
           <aside className="absolute inset-y-0 left-0 w-72 bg-background shadow-xl flex flex-col" role="dialog" aria-modal="true" aria-label="Menú">
             <div className="flex h-16 items-center justify-between border-b px-6">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
                   <Fingerprint className="h-5 w-5" />
                 </div>
-                <span className="text-sm font-semibold">Pulso</span>
+                <span className="font-heading text-xl font-normal tracking-[-0.015em]">Pulso</span>
               </div>
               <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground" aria-label="Cerrar menú">
                 <X className="h-5 w-5" />
@@ -149,7 +149,7 @@ export default function Layout() {
           </button>
           <div className="flex items-center gap-2">
             <Fingerprint className="h-5 w-5 text-primary" />
-            <span className="text-sm font-semibold">Pulso</span>
+            <span className="font-heading text-xl font-normal tracking-[-0.015em]">Pulso</span>
           </div>
         </header>
 

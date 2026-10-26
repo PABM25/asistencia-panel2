@@ -92,7 +92,7 @@ export default function Horarios() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Horarios</h1>
+        <h1 className="page-title">Horarios</h1>
         <p className="text-sm text-muted-foreground">Consulta y ajusta los horarios de los empleados</p>
       </div>
 
@@ -128,7 +128,7 @@ export default function Horarios() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {empleados.map((emp) => (
-            <div key={emp.id} className="rounded-xl border bg-card p-5 shadow-xs">
+            <div key={emp.id} className="rounded-3xl bg-muted p-5">
               <div className="mb-4">
                 <p className="font-semibold">{emp.nombre} {emp.apellidos}</p>
                 <p className="text-xs text-muted-foreground">{emp.departamento} · {emp.cargo}</p>

@@ -78,7 +78,7 @@ export default function Login() {
       }
     >
       {DEMO && DEMO_EMAIL && (
-        <div className="mb-6 rounded-xl border border-primary/20 bg-primary/5 p-4">
+        <div className="mb-6 rounded-3xl bg-peach p-5 text-sienna">
           <p className="text-sm font-semibold">Prueba la demo</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Entra como administrador con <strong>{DEMO_EMAIL}</strong> / <strong>{DEMO_PASSWORD}</strong>. Puedes
@@ -124,7 +124,7 @@ export default function Login() {
       )}
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <div className="mb-4 p-3 rounded-2xl bg-destructive/10 text-destructive text-sm">
           {error}
         </div>
       )}

@@ -9,7 +9,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid,
 } from "recharts";
 import { format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
@@ -89,7 +88,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <h1 className="page-title">Dashboard</h1>
         <p className="text-sm text-muted-foreground">
           Resumen de asistencia · {format(new Date(), "EEEE d 'de' MMMM, yyyy", { locale: es })}
         </p>
@@ -117,24 +116,23 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-xl border bg-card p-6 shadow-xs">
-          <h2 className="text-base font-semibold mb-4">Asistencia últimos 7 días</h2>
+        <div className="lg:col-span-2 rounded-[20px] bg-card p-6 shadow-artifact">
+          <h2 className="text-[17px] font-medium mb-4">Asistencia últimos 7 días</h2>
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={chartData} margin={{ left: -20, right: 10, top: 5 }}>
               <defs>
                 <linearGradient id="colorPres" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  <stop offset="5%" stopColor="hsl(var(--sienna))" stopOpacity={0.12} />
+                  <stop offset="95%" stopColor="hsl(var(--sienna))" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
-              <XAxis dataKey="fecha" tickLine={false} axisLine={false} fontSize={12} />
-              <YAxis tickLine={false} axisLine={false} fontSize={12} allowDecimals={false} />
-              <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))" }} />
+                            <XAxis dataKey="fecha" tickLine={false} axisLine={false} fontSize={12} stroke="hsl(var(--muted-foreground))" />
+              <YAxis tickLine={false} axisLine={false} fontSize={12} allowDecimals={false} stroke="hsl(var(--muted-foreground))" />
+              <Tooltip contentStyle={{ borderRadius: 16, border: "none", boxShadow: "var(--shadow-popover)" }} />
               <Area
                 type="monotone"
                 dataKey="presentes"
-                stroke="hsl(var(--primary))"
+                stroke="hsl(var(--sienna))"
                 strokeWidth={2}
                 fill="url(#colorPres)"
                 name="Presentes"
@@ -143,8 +141,8 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="rounded-xl border bg-card p-6 shadow-xs">
-          <h2 className="text-base font-semibold mb-4">Actividad reciente</h2>
+        <div className="rounded-3xl bg-muted p-6">
+          <h2 className="text-[17px] font-medium mb-4">Actividad reciente</h2>
           {recientes.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">Sin registros hoy</p>
           ) : (

@@ -100,7 +100,7 @@ export default function Empleados() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Empleados</h1>
+          <h1 className="page-title">Empleados</h1>
           <p className="text-sm text-muted-foreground">Gestiona el directorio de empleados</p>
         </div>
         <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
@@ -128,7 +128,7 @@ export default function Empleados() {
         </Select>
       </div>
 
-      <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
+      <div className="rounded-3xl border bg-card overflow-hidden">
         {loading ? (
           <div className="flex h-40 items-center justify-center">
             <div className="h-8 w-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
@@ -158,7 +158,7 @@ export default function Empleados() {
                       <div className="font-medium">
                         {fullName(e)}
                         {e.estado === "activo" && !e.tiene_pin && (
-                          <span className="ml-2 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                          <span className="ml-2 rounded-full bg-peach px-2 py-0.5 text-[10px] font-medium text-sienna">
                             Sin PIN
                           </span>
                         )}
@@ -174,7 +174,7 @@ export default function Empleados() {
                       <span
                         className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           e.estado === "activo"
-                            ? "bg-emerald-500/10 text-emerald-600"
+                            ? "bg-card text-foreground ring-1 ring-inset ring-border"
                             : "bg-muted text-muted-foreground"
                         }`}
                       >
@@ -197,7 +197,7 @@ export default function Empleados() {
                           onClick={() => setToDelete(e)}
                           aria-label={`Eliminar a ${fullName(e)}`}
                         >
-                          <Trash2 className="h-4 w-4 text-rose-500" />
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </TableCell>
@@ -238,7 +238,7 @@ export default function Empleados() {
                 Desactivar
               </AlertDialogAction>
             )}
-            <AlertDialogAction onClick={confirmDelete} className="bg-rose-500 hover:bg-rose-600">
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

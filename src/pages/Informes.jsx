@@ -148,7 +148,7 @@ export default function Informes() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Informes</h1>
+          <h1 className="page-title">Informes</h1>
           <p className="text-sm text-muted-foreground">Resumen de asistencia por empleado y exportación</p>
         </div>
         <Button onClick={exportCSV} disabled={rows.length === 0}>
@@ -181,22 +181,22 @@ export default function Informes() {
       {/* Totales */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         {[
-          { label: "Presentes", value: totales.presente, color: "text-emerald-600" },
-          { label: "Retrasos", value: totales.retraso, color: "text-amber-600" },
-          { label: "Ausentes", value: totales.ausente, color: "text-rose-600" },
-          { label: "Vacaciones", value: totales.vacaciones, color: "text-sky-600" },
-          { label: "Permisos", value: totales.permiso, color: "text-violet-600" },
-          { label: "Horas trabajadas", value: formatoHoras(totales.minutos), color: "" },
-          { label: "Horas extra", value: formatoHoras(totales.extra), color: "text-orange-600" },
+          { label: "Presentes", value: totales.presente },
+          { label: "Retrasos", value: totales.retraso },
+          { label: "Ausentes", value: totales.ausente },
+          { label: "Vacaciones", value: totales.vacaciones },
+          { label: "Permisos", value: totales.permiso },
+          { label: "Horas trabajadas", value: formatoHoras(totales.minutos) },
+          { label: "Horas extra", value: formatoHoras(totales.extra) },
         ].map((t) => (
-          <div key={t.label} className="rounded-xl border bg-card p-4 shadow-xs">
+          <div key={t.label} className="rounded-3xl bg-muted p-4">
             <p className="text-xs text-muted-foreground">{t.label}</p>
-            <p className={`text-2xl font-semibold ${t.color}`}>{t.value}</p>
+            <p className="mt-1 font-heading text-3xl font-normal tracking-[-0.015em]">{t.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
+      <div className="rounded-3xl border bg-card overflow-hidden">
         {loading ? (
           <div className="flex h-40 items-center justify-center">
             <div className="h-8 w-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
@@ -226,24 +226,24 @@ export default function Informes() {
                 {rows.map((r, i) => (
                   <TableRow key={i}>
                     <TableCell className="font-medium">{r.nombre}</TableCell>
-                    <TableCell className="text-center text-emerald-600">{r.presente}</TableCell>
-                    <TableCell className="text-center text-amber-600">{r.retraso}</TableCell>
-                    <TableCell className="text-center text-rose-600">{r.ausente}</TableCell>
-                    <TableCell className="text-center text-sky-600">{r.vacaciones}</TableCell>
-                    <TableCell className="text-center text-violet-600">{r.permiso}</TableCell>
+                    <TableCell className="text-center">{r.presente}</TableCell>
+                    <TableCell className="text-center">{r.retraso}</TableCell>
+                    <TableCell className="text-center">{r.ausente}</TableCell>
+                    <TableCell className="text-center">{r.vacaciones}</TableCell>
+                    <TableCell className="text-center">{r.permiso}</TableCell>
                     <TableCell className="text-center font-semibold">{r.total}</TableCell>
                     <TableCell className="text-center tabular-nums">
                       {formatoHoras(r.minutos)}
                       {r.sinSalida > 0 && (
                         <span
-                          className="ml-1 text-xs text-amber-600"
+                          className="ml-1 rounded-full bg-peach px-2 py-0.5 text-xs text-sienna"
                           title={`${r.sinSalida} día(s) con entrada pero sin salida: no suman horas`}
                         >
                           ({r.sinSalida} sin salida)
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-center tabular-nums text-orange-600">
+                    <TableCell className="text-center tabular-nums">
                       {r.extra > 0 ? formatoHoras(r.extra) : "—"}
                     </TableCell>
                   </TableRow>

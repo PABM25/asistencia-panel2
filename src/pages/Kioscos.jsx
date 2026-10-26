@@ -110,7 +110,7 @@ export default function Kioscos() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Kiosco</h1>
+        <h1 className="page-title">Kiosco</h1>
         <p className="text-sm text-muted-foreground">
           Dispositivos donde los empleados marcan su entrada y salida con su PIN
         </p>
@@ -118,7 +118,7 @@ export default function Kioscos() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Activar este dispositivo */}
-        <div className="rounded-xl border bg-card p-5 shadow-xs">
+        <div className="rounded-3xl bg-muted p-5">
           <div className="mb-4 flex items-center gap-2">
             <TabletSmartphone className="h-5 w-5 text-primary" />
             <h2 className="text-base font-semibold">Este dispositivo</h2>
@@ -137,7 +137,7 @@ export default function Kioscos() {
           ) : (
             <div className="space-y-4">
               {esteDispositivo === "revocado" && (
-                <p className="rounded-lg bg-amber-500/10 p-3 text-xs text-amber-700">
+                <p className="rounded-2xl bg-peach p-3 text-xs text-sienna">
                   Este dispositivo estaba activado, pero su kiosco fue revocado. Puedes activarlo de nuevo.
                 </p>
               )}
@@ -162,7 +162,7 @@ export default function Kioscos() {
         </div>
 
         {/* Empleados sin PIN */}
-        <div className="rounded-xl border bg-card p-5 shadow-xs">
+        <div className="rounded-3xl bg-muted p-5">
           <div className="mb-4 flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" />
             <h2 className="text-base font-semibold">PIN de los empleados</h2>
@@ -187,7 +187,7 @@ export default function Kioscos() {
       </div>
 
       {/* Lista de kioscos */}
-      <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
+      <div className="overflow-hidden rounded-3xl border bg-card">
         {loading ? (
           <div className="flex h-32 items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-primary" />
@@ -213,7 +213,7 @@ export default function Kioscos() {
                     <TableCell>
                       <span
                         className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          k.activo ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground"
+                          k.activo ? "bg-card text-foreground ring-1 ring-inset ring-border" : "bg-muted text-muted-foreground"
                         }`}
                       >
                         {k.activo ? "Activo" : "Revocado"}
@@ -226,7 +226,7 @@ export default function Kioscos() {
                       {format(new Date(k.created_date), "dd MMM yyyy", { locale: es })}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => setARevocar(k)} className="text-rose-600">
+                      <Button variant="ghost" size="sm" onClick={() => setARevocar(k)} className="text-destructive">
                         {k.activo ? "Revocar" : <Trash2 className="h-4 w-4" />}
                       </Button>
                     </TableCell>
@@ -276,7 +276,7 @@ export default function Kioscos() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={revocar} className="bg-rose-500 hover:bg-rose-600">
+            <AlertDialogAction onClick={revocar} className="bg-destructive hover:bg-destructive/90">
               {aRevocar?.activo ? "Revocar" : "Eliminar"}
             </AlertDialogAction>
           </AlertDialogFooter>

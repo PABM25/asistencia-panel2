@@ -22,10 +22,12 @@ export const DEPARTAMENTOS = [
 
 export const ESTADOS_ASISTENCIA = ["presente", "retraso", "ausente", "vacaciones", "permiso"];
 
+// Paleta casi monocroma: el melocotón queda para lo que pide atención (retraso)
+// y la tinta llena para la ausencia. El texto de la etiqueta siempre dice el estado.
 export const estadoBadge = {
-  presente: "bg-emerald-500/10 text-emerald-600",
-  retraso: "bg-amber-500/10 text-amber-600",
-  ausente: "bg-rose-500/10 text-rose-600",
-  vacaciones: "bg-sky-500/10 text-sky-600",
-  permiso: "bg-violet-500/10 text-violet-600",
+  presente: "bg-card text-foreground ring-1 ring-inset ring-border",
+  retraso: "bg-peach text-sienna",
+  ausente: "bg-foreground text-background",
+  vacaciones: "bg-muted text-muted-foreground",
+  permiso: "bg-muted text-muted-foreground border border-dashed border-border",
 };

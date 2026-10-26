@@ -13,11 +13,11 @@ import { es } from "date-fns/locale";
 import { DEPARTAMENTOS } from "@/lib/constants";
 
 const tipoMeta = {
-  mañana: { icon: Sun, color: "bg-amber-500/15 text-amber-700 border-amber-500/30" },
-  tarde: { icon: Sunset, color: "bg-orange-500/15 text-orange-700 border-orange-500/30" },
-  noche: { icon: Moon, color: "bg-indigo-500/15 text-indigo-700 border-indigo-500/30" },
-  partido: { color: "bg-violet-500/15 text-violet-700 border-violet-500/30" },
-  personalizado: { color: "bg-muted text-muted-foreground border-border" },
+  mañana: { icon: Sun, color: "bg-card text-foreground border-border" },
+  tarde: { icon: Sunset, color: "bg-muted text-foreground border-transparent" },
+  noche: { icon: Moon, color: "bg-foreground text-background border-foreground" },
+  partido: { color: "bg-peach text-sienna border-peach" },
+  personalizado: { color: "bg-fog text-muted-foreground border-dashed border-border" },
 };
 
 const deptos = DEPARTAMENTOS;
@@ -77,7 +77,7 @@ export default function WeeklyCalendar({ turnos, empleados, weekStart, onWeekCha
         </div>
       </div>
 
-      <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
+      <div className="rounded-3xl border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse min-w-[900px]">
             <thead>

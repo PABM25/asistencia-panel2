@@ -144,7 +144,7 @@ export default function BulkTurnosDialog({ open, onClose, onSaved, empleados, de
             </div>
           </div>
           {result && (
-            <p className="text-sm text-emerald-600 font-medium">
+            <p className="text-sm text-foreground font-medium">
               ✓ {result.count} turno(s) asignado(s) correctamente.
               {result.omitidos > 0 && (
                 <span className="block text-xs font-normal text-muted-foreground">

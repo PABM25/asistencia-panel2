@@ -75,7 +75,7 @@ export default function ResetPassword() {
   if (checking) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-muted border-t-foreground rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -106,7 +106,7 @@ export default function ResetPassword() {
       subtitle="Escribe tu nueva contraseña"
     >
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <div className="mb-4 p-3 rounded-2xl bg-destructive/10 text-destructive text-sm">
           {error}
         </div>
       )}

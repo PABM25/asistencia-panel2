@@ -95,7 +95,7 @@ export default function Register() {
         subtitle={`Enviamos un código de 6 dígitos a ${email}`}
       >
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+          <div className="mb-4 p-3 rounded-2xl bg-destructive/10 text-destructive text-sm">
             {error}
           </div>
         )}
@@ -200,7 +200,7 @@ export default function Register() {
       )}
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <div className="mb-4 p-3 rounded-2xl bg-destructive/10 text-destructive text-sm">
           {error}
         </div>
       )}

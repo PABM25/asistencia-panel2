@@ -52,6 +52,14 @@
   --color-sidebar-border: hsl(var(--sidebar-border));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
+  --color-peach: hsl(var(--peach));
+  --color-sienna: hsl(var(--sienna));
+  --color-fog: hsl(var(--fog));
+
+  --shadow-artifact: 0 0 0 1px rgba(4, 23, 43, 0.05), 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-popover: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 4px 24px 0 rgba(0, 0, 0, 0.08);
+  --shadow-modal: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 8px 40px 0 rgba(0, 0, 0, 0.1);
+
   --font-heading: var(--font-heading);
   --font-body: var(--font-body);
   --font-display: var(--font-display);
@@ -89,49 +97,58 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
+    border-color: var(--color-border, currentcolor);
   }
 }
 
 @layer base {
+  /*
+    Estilo editorial: lienzo blanco casi monocromo, titulares en serif de
+    peso 400 y un único acento cálido (melocotón con tinta siena) para lo que
+    debe destacar. Los valores son HSL sin hsl() porque así los usa shadcn.
+  */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 0 0% 100%;          /* papel #ffffff */
+    --foreground: 216 10% 10%;        /* tinta #17191c */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 216 10% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --font-heading: ui-sans-serif, system-ui, sans-serif;
-    --font-body: ui-sans-serif, system-ui, sans-serif;
-    --font-display: ui-sans-serif, system-ui, sans-serif;
+    --popover-foreground: 216 10% 10%;
+    --primary: 216 10% 10%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4% 95%;          /* niebla #f2f2f3 */
+    --secondary-foreground: 216 10% 10%;
+    --muted: 240 4% 95%;
+    /* Un punto más oscuro que el #777b86 de referencia para llegar a 4.5:1 sobre gris. */
+    --muted-foreground: 224 7% 45%;
+    --accent: 240 4% 95%;
+    --accent-foreground: 216 10% 10%;
+    --destructive: 4 62% 46%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 92.5%;             /* filete #ececec */
+    --input: 0 0% 92.5%;
+    --ring: 216 10% 10%;
+    --peach: 23 84% 90%;              /* acento #fbe1d1 */
+    --sienna: 14 56% 23%;             /* tinta sobre melocotón #5d2a1a */
+    --fog: 240 11% 98%;               /* banda alterna #fafafb */
+    --chart-1: 14 56% 23%;
+    --chart-2: 216 10% 10%;
+    --chart-3: 224 7% 45%;
+    --chart-4: 23 84% 90%;
+    --chart-5: 240 4% 80%;
+    --radius: 1rem;
+    --font-heading: 'Source Serif 4 Variable', 'Source Serif 4', Georgia, ui-serif, serif;
+    --font-body: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
+    --font-display: var(--font-heading);
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 216 10% 10%;
+    --sidebar-primary: 216 10% 10%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 95%;
+    --sidebar-accent-foreground: 216 10% 10%;
+    --sidebar-border: 0 0% 92.5%;
+    --sidebar-ring: 216 10% 10%;
   }
 
   .dark {
@@ -178,6 +195,20 @@
   }
 
   body {
-    @apply bg-background text-foreground font-body;
+    @apply bg-background text-foreground font-body antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+}
+
+/* Título de cada página: serif de peso 400 con el tracking ajustado. */
+@utility page-title {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 2rem;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+
+  @media (width >= 64rem) {
+    font-size: 44px;
   }
 }

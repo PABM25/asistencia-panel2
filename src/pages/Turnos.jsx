@@ -39,11 +39,11 @@ import { notifyError } from "@/lib/notify";
 const tipos = ["mañana", "tarde", "noche", "partido", "personalizado"];
 
 const tipoMeta = {
-  mañana: { icon: Sun, color: "text-amber-600 bg-amber-500/10" },
-  tarde: { icon: Sunset, color: "text-orange-600 bg-orange-500/10" },
-  noche: { icon: Moon, color: "text-indigo-600 bg-indigo-500/10" },
-  partido: { color: "text-violet-600 bg-violet-500/10" },
-  personalizado: { color: "text-muted-foreground bg-muted" },
+  mañana: { icon: Sun, color: "text-foreground bg-card ring-1 ring-inset ring-border" },
+  tarde: { icon: Sunset, color: "text-foreground bg-muted" },
+  noche: { icon: Moon, color: "text-background bg-foreground" },
+  partido: { color: "text-sienna bg-peach" },
+  personalizado: { color: "text-muted-foreground bg-fog ring-1 ring-inset ring-border" },
 };
 
 const deptos = DEPARTAMENTOS;
@@ -119,11 +119,11 @@ export default function Turnos() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Turnos</h1>
+          <h1 className="page-title">Turnos</h1>
           <p className="text-sm text-muted-foreground">Asigna horarios específicos a cada empleado según su departamento y cargo</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-lg border bg-muted/40 p-0.5">
+          <div className="inline-flex rounded-full bg-muted p-1">
             <Button
               variant={view === "lista" ? "default" : "ghost"}
               size="sm"
@@ -184,7 +184,7 @@ export default function Turnos() {
       )}
 
       {view === "lista" ? (
-        <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
+        <div className="rounded-3xl border bg-card overflow-hidden">
           {loading ? (
             <div className="flex h-40 items-center justify-center">
               <div className="h-8 w-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
@@ -235,7 +235,7 @@ export default function Turnos() {
                               <Pencil className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="icon" onClick={() => setToDelete(t)} aria-label={`Eliminar turno de ${t.empleado_nombre}`}>
-                              <Trash2 className="h-4 w-4 text-rose-500" />
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
                         </TableCell>
@@ -294,7 +294,7 @@ export default function Turnos() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={onDelete} className="bg-rose-500 hover:bg-rose-600">
+            <AlertDialogAction onClick={onDelete} className="bg-destructive hover:bg-destructive/90">
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -149,16 +149,16 @@ export default function Kiosco() {
   if (estado === "sin_token") {
     return (
       <Pantalla>
-        <div className="mx-auto max-w-md rounded-2xl border bg-card p-8 text-center shadow-xs">
+        <div className="mx-auto max-w-md rounded-3xl bg-muted p-8 text-center">
           <TabletSmartphone className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-          <h1 className="text-xl font-semibold">Este dispositivo no está activado como kiosco</h1>
+          <h1 className="font-heading text-3xl font-normal tracking-[-0.015em]">Este dispositivo no está activado como kiosco</h1>
           <p className="mt-3 text-sm text-muted-foreground">
             Un administrador debe iniciar sesión en este dispositivo y activarlo desde
             <strong> Panel → Kiosco</strong>.
           </p>
           <Link
             to="/login"
-            className="mt-6 inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+            className="mt-6 inline-flex items-center rounded-full bg-primary px-5 py-2 text-sm font-normal text-primary-foreground"
           >
             Iniciar sesión como administrador
           </Link>
@@ -180,13 +180,13 @@ export default function Kiosco() {
   if (estado === "error") {
     return (
       <Pantalla>
-        <div className="mx-auto max-w-md rounded-2xl border bg-card p-8 text-center shadow-xs">
-          <XCircle className="mx-auto mb-4 h-12 w-12 text-rose-500" />
-          <h1 className="text-xl font-semibold">Sin conexión</h1>
+        <div className="mx-auto max-w-md rounded-3xl bg-muted p-8 text-center">
+          <XCircle className="mx-auto mb-4 h-12 w-12 text-destructive" />
+          <h1 className="font-heading text-3xl font-normal tracking-[-0.015em]">Sin conexión</h1>
           <p className="mt-3 text-sm text-muted-foreground">No se pudo cargar la lista de empleados.</p>
           <button
             onClick={() => { setEstado("cargando"); cargar(); }}
-            className="mt-6 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+            className="mt-6 rounded-full bg-primary px-5 py-2 text-sm font-normal text-primary-foreground"
           >
             Reintentar
           </button>
@@ -200,15 +200,15 @@ export default function Kiosco() {
       {resultado ? (
         <div
           className={cn(
-            "mx-auto flex max-w-xl flex-col items-center rounded-3xl border p-10 text-center shadow-xs",
-            resultado.ok ? "border-emerald-500/30 bg-emerald-500/10" : "border-rose-500/30 bg-rose-500/10"
+            "mx-auto flex max-w-xl flex-col items-center rounded-3xl border p-10 text-center",
+            resultado.ok ? "border-transparent bg-muted" : "border-destructive/20 bg-destructive/5"
           )}
           onClick={reiniciar}
         >
           {resultado.ok ? (
-            <CheckCircle2 className="mb-4 h-20 w-20 text-emerald-600" />
+            <CheckCircle2 className="mb-4 h-20 w-20 text-foreground" />
           ) : (
-            <XCircle className="mb-4 h-20 w-20 text-rose-600" />
+            <XCircle className="mb-4 h-20 w-20 text-destructive" />
           )}
           <h2 className="text-3xl font-semibold">{resultado.titulo}</h2>
           <p className="mt-3 text-lg text-muted-foreground">{resultado.detalle}</p>
@@ -221,12 +221,12 @@ export default function Kiosco() {
           >
             <ArrowLeft className="h-4 w-4" /> No soy yo
           </button>
-          <div className="rounded-3xl border bg-card p-6 shadow-xs">
+          <div className="rounded-3xl bg-muted p-6">
             <p className="text-center text-sm text-muted-foreground">Hola,</p>
             <h2 className="text-center text-2xl font-semibold">{seleccionado.nombre}</h2>
             {DEMO && PINES_DEMO[seleccionado.id] && (
               <p className="mt-2 text-center text-xs">
-                <span className="rounded-full bg-amber-500/15 px-2.5 py-1 font-medium text-amber-700">
+                <span className="rounded-full bg-peach px-2.5 py-1 font-medium text-sienna">
                   Demo · PIN de prueba: {PINES_DEMO[seleccionado.id]}
                 </span>
               </p>
@@ -244,7 +244,7 @@ export default function Kiosco() {
                 />
               ))}
             </div>
-            <p className={cn("min-h-5 text-center text-sm", errorPin ? "text-rose-600" : "text-transparent")} role="alert">
+            <p className={cn("min-h-5 text-center text-sm", errorPin ? "text-destructive" : "text-transparent")} role="alert">
               {errorPin || "·"}
             </p>
             <div className="mt-3 grid grid-cols-3 gap-3">
@@ -261,14 +261,14 @@ export default function Kiosco() {
               <button
                 onClick={() => fichar("entrada")}
                 disabled={pin.length < 4 || enviando}
-                className="flex h-16 items-center justify-center gap-2 rounded-2xl bg-emerald-600 text-lg font-semibold text-white disabled:opacity-40"
+                className="flex h-16 items-center justify-center gap-2 rounded-full bg-primary text-lg font-medium text-primary-foreground disabled:opacity-40"
               >
                 <LogIn className="h-5 w-5" /> Entrada
               </button>
               <button
                 onClick={() => fichar("salida")}
                 disabled={pin.length < 4 || enviando}
-                className="flex h-16 items-center justify-center gap-2 rounded-2xl bg-slate-800 text-lg font-semibold text-white disabled:opacity-40"
+                className="flex h-16 items-center justify-center gap-2 rounded-full border border-foreground bg-transparent text-lg font-medium text-foreground disabled:opacity-40"
               >
                 <LogOut className="h-5 w-5" /> Salida
               </button>
@@ -278,7 +278,7 @@ export default function Kiosco() {
       ) : (
         <div className="mx-auto max-w-4xl">
           {DEMO && (
-            <p className="mb-4 rounded-xl bg-amber-500/10 px-4 py-3 text-center text-sm text-amber-800">
+            <p className="mb-4 rounded-2xl bg-peach px-4 py-3 text-center text-sm text-sienna">
               <strong>Demo:</strong> elige a cualquier empleado; su PIN de prueba aparece al seleccionarlo. Prueba
               también a equivocarte de PIN 5 veces.
             </p>
@@ -289,7 +289,7 @@ export default function Kiosco() {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Busca tu nombre..."
-              className="h-14 w-full rounded-2xl border bg-card pl-12 pr-4 text-lg shadow-xs outline-hidden focus:ring-2 focus:ring-primary"
+              className="h-14 w-full rounded-2xl border bg-card pl-12 pr-4 text-lg outline-hidden placeholder:text-[#a3a6af] focus:ring-2 focus:ring-primary"
             />
           </div>
           {filtrados.length === 0 ? (
@@ -301,7 +301,7 @@ export default function Kiosco() {
                   key={e.id}
                   disabled={!e.tiene_pin}
                   onClick={() => setSeleccionado(e)}
-                  className="flex min-h-16 flex-col items-start justify-center rounded-2xl border bg-card px-5 py-3 text-left shadow-xs transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-16 flex-col items-start justify-center rounded-2xl bg-muted px-5 py-3 text-left transition-colors hover:bg-secondary/70 hover:ring-1 hover:ring-foreground disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="text-lg font-medium">{e.nombre}</span>
                   <span className="text-xs text-muted-foreground">
@@ -322,10 +322,10 @@ function Pantalla({ ahora, children }) {
     <div className="min-h-screen bg-muted/30 px-4 py-6 sm:px-8">
       <header className="mx-auto mb-8 flex max-w-4xl items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Fingerprint className="h-5 w-5" />
           </div>
-          <span className="text-lg font-semibold">Pulso</span>
+          <span className="font-heading text-2xl font-normal tracking-[-0.015em]">Pulso</span>
         </div>
         {ahora && (
           <div className="text-right">
@@ -346,7 +346,7 @@ function Tecla({ className, ...props }) {
     <button
       type="button"
       className={cn(
-        "flex h-16 items-center justify-center rounded-2xl border bg-background text-2xl font-medium shadow-xs active:bg-accent",
+        "flex h-16 items-center justify-center rounded-full bg-muted text-2xl font-normal active:bg-secondary/70",
         className
       )}
       {...props}

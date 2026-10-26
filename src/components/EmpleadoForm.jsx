@@ -186,7 +186,7 @@ export default function EmpleadoForm({ open, onClose, onSaved, empleado }) {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-2 rounded-lg border bg-muted/30 p-3">
+          <div className="grid gap-2 rounded-2xl bg-muted p-4">
             <Label htmlFor="pin">PIN para el kiosco</Label>
             <Input
               id="pin"

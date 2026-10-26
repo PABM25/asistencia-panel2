@@ -180,8 +180,8 @@ export default function Ajustes() {
   if (sinMigracion || !cfg) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Ajustes</h1>
-        <div className="rounded-xl border bg-card p-6 text-sm shadow-xs">
+        <h1 className="page-title">Ajustes</h1>
+        <div className="rounded-3xl bg-muted p-6 text-sm">
           Falta ejecutar la migración <code>20261021000000_reglas_asistencia.sql</code> en el SQL Editor de
           Supabase. Después recarga esta página.
         </div>
@@ -195,12 +195,12 @@ export default function Ajustes() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Ajustes</h1>
+        <h1 className="page-title">Ajustes</h1>
         <p className="text-sm text-muted-foreground">Reglas para calcular retrasos, horas y ausencias</p>
       </div>
 
       {/* Reglas */}
-      <div className="rounded-xl border bg-card p-5 shadow-xs">
+      <div className="rounded-3xl bg-muted p-5">
         <div className="mb-4 flex items-center gap-2">
           <Clock className="h-5 w-5 text-primary" />
           <h2 className="text-base font-semibold">Jornada</h2>
@@ -250,7 +250,7 @@ export default function Ajustes() {
                 aria-pressed={cfg.dias_laborales.includes(d.n)}
                 onClick={() => toggleDia(d.n)}
                 className={cn(
-                  "h-10 w-10 rounded-lg border text-sm font-medium transition-colors",
+                  "h-10 w-10 rounded-full border text-sm font-normal transition-colors",
                   cfg.dias_laborales.includes(d.n)
                     ? "border-primary bg-primary text-primary-foreground"
                     : "bg-background text-muted-foreground hover:bg-accent"
@@ -274,7 +274,7 @@ export default function Ajustes() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Ausencias automáticas */}
-        <div className="rounded-xl border bg-card p-5 shadow-xs">
+        <div className="rounded-3xl bg-muted p-5">
           <div className="mb-4 flex items-center gap-2">
             <UserX className="h-5 w-5 text-primary" />
             <h2 className="text-base font-semibold">Ausencias automáticas</h2>
@@ -294,10 +294,10 @@ export default function Ajustes() {
             />
           </div>
           {cfg.marcar_ausencias !== guardado.marcar_ausencias && (
-            <p className="mt-2 text-xs text-amber-600">Pulsa «Guardar cambios» arriba para aplicarlo.</p>
+            <p className="mt-2 text-xs font-medium text-foreground">Pulsa «Guardar cambios» arriba para aplicarlo.</p>
           )}
           {programada === false && (
-            <div className="mt-3 space-y-2 rounded-lg bg-amber-500/10 p-3 text-xs text-amber-700">
+            <div className="mt-3 space-y-2 rounded-2xl bg-peach p-3 text-xs text-sienna">
               <p>
                 La tarea diaria no está programada. Activa la extensión <strong>pg_cron</strong> en Supabase
                 (Database → Extensions) y pulsa «Programar». Mientras tanto puedes marcarlas a mano aquí abajo.
@@ -308,7 +308,7 @@ export default function Ajustes() {
             </div>
           )}
           {programada === true && (
-            <p className="mt-3 text-xs text-emerald-600">✓ Tarea diaria programada (03:00–04:00, hora de Chile).</p>
+            <p className="mt-3 text-xs text-foreground">✓ Tarea diaria programada (03:00–04:00, hora de Chile).</p>
           )}
 
           <div className="mt-5 border-t pt-4">
@@ -333,7 +333,7 @@ export default function Ajustes() {
         </div>
 
         {/* Feriados */}
-        <div className="rounded-xl border bg-card p-5 shadow-xs">
+        <div className="rounded-3xl bg-muted p-5">
           <div className="mb-4 flex items-center gap-2">
             <CalendarOff className="h-5 w-5 text-primary" />
             <h2 className="text-base font-semibold">Feriados</h2>
@@ -367,7 +367,7 @@ export default function Ajustes() {
                     {f.nombre}
                   </span>
                   <Button variant="ghost" size="icon" onClick={() => quitarFeriado(f.fecha)} aria-label={`Quitar ${f.nombre}`}>
-                    <Trash2 className="h-4 w-4 text-rose-500" />
+                    <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </li>
               ))}
