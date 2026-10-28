@@ -46,7 +46,6 @@ const SCHEMAS = {
   },
 };
 
-// Escapa los comodines de LIKE para que el texto buscado se tome literal.
 // Columnas que tienen todas las tablas y se pueden usar en filtros y orden.
 const SYSTEM_COLUMNS = ['id', 'created_date', 'updated_date'];
 
@@ -57,6 +56,7 @@ function checkField(schema, field) {
   return field;
 }
 
+// Escapa los comodines de LIKE para que el texto buscado se tome literal.
 const likePattern = (text) => `%${String(text).replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 
 // Valor para la sintaxis de texto de PostgREST usada dentro de .or(...)
